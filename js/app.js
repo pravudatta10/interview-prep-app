@@ -26,6 +26,10 @@ const App = (() => {
 
         updatePlaceholder();
 
+        // reset scroll to top when changing concept
+        const contentContainer = document.getElementById('contentContainer');
+        if (contentContainer) contentContainer.scrollTop = 0;
+
         const offcanvasEl = document.getElementById('mobileSidebar');
         const bs = bootstrap.Offcanvas.getInstance(offcanvasEl);
         if (bs) bs.hide();

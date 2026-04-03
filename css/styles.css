@@ -45,6 +45,8 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .search-input {
@@ -55,10 +57,14 @@ body {
     margin-bottom: 20px;
     background: white;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
 #contentContainer {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -97,5 +103,6 @@ pre {
 @media (max-width: 768px) {
     .app-container {
         flex-direction: column;
+        height: 100vh;
     }
 }
