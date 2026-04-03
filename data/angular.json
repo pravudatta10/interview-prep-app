@@ -1,0 +1,57 @@
+{
+  "concept": "Angular",
+  "sections": [
+    {
+      "title": "Basics",
+      "items": [
+        {
+          "question": "What is Angular?",
+          "answer": "Angular is a TypeScript-based frontend framework for building single-page applications."
+        },
+        {
+          "question": "What is a Component?",
+          "answer": "A component is the building block of Angular UI consisting of HTML, CSS, and TypeScript."
+        }
+      ]
+    },
+    {
+      "title": "Data Binding",
+      "items": [
+        {
+          "question": "What are types of data binding?",
+          "answer": "Interpolation, Property Binding, Event Binding, Two-way Binding."
+        },
+        {
+          "question": "What is two-way binding?",
+          "answer": "Synchronizes data between model and view using [(ngModel)]."
+        }
+      ]
+    },
+    {
+      "title": "RxJS",
+      "items": [
+        {
+          "question": "What is Observable?",
+          "answer": "Observable is a stream of data that can be subscribed to and reacted upon."
+        },
+        {
+          "question": "Difference between Promise and Observable?",
+          "answer": "Promise emits once, Observable can emit multiple values over time."
+        }
+      ]
+    },
+    {
+      "title": "Architecture",
+      "items": [
+        {
+          "question": "What is Lazy Loading?",
+          "answer": "Loading modules only when required to improve performance."
+        },
+        {
+          "question": "What is Dependency Injection in Angular?",
+          "answer": "Angular provides dependencies to components via injector system."
+        }
+      ]
+    }
+  ]
+}
