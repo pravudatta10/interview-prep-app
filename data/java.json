@@ -6,7 +6,8 @@
       "items": [
         {
           "question": "What is JVM?",
-          "answer": "JVM (Java Virtual Machine) is responsible for executing Java bytecode and providing platform independence."
+          "answer": "JVM (Java Virtual Machine) is responsible for executing Java bytecode and providing platform independence.",
+          "code": "public class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}"
         },
         {
           "question": "What is JDK vs JRE?",
