@@ -1,6 +1,6 @@
 const DataService = (() => {
 
-    const files = ["java.json", "spring.json","angular.json"];
+    const files = ["java.json", "spring.json","angular.json","microservice.json"];
     let cache = [];
 
     async function loadAll() {

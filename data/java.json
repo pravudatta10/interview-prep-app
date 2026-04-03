@@ -52,58 +52,6 @@
           "answer": "Runnable does not return result, Callable returns result and can throw checked exceptions."
         }
       ]
-    },
-    {
-      "title": "Basics",
-      "items": [
-        {
-          "question": "What is JVM?",
-          "answer": "JVM (Java Virtual Machine) is responsible for executing Java bytecode and providing platform independence."
-        },
-        {
-          "question": "What is JDK vs JRE?",
-          "answer": "JDK includes tools for development (compiler, debugger) while JRE provides runtime environment to execute Java programs."
-        }
-      ]
-    },
-    {
-      "title": "OOP Concepts",
-      "items": [
-        {
-          "question": "What are the 4 pillars of OOP?",
-          "answer": "Encapsulation, Inheritance, Polymorphism, and Abstraction."
-        },
-        {
-          "question": "What is method overloading vs overriding?",
-          "answer": "Overloading is compile-time polymorphism (same method name, different parameters). Overriding is runtime polymorphism (same method in subclass)."
-        }
-      ]
-    },
-    {
-      "title": "Collections",
-      "items": [
-        {
-          "question": "Difference between ArrayList and LinkedList?",
-          "answer": "ArrayList uses dynamic array (fast read), LinkedList uses nodes (fast insert/delete)."
-        },
-        {
-          "question": "What is HashMap?",
-          "answer": "HashMap stores key-value pairs using hashing. It allows one null key and multiple null values."
-        }
-      ]
-    },
-    {
-      "title": "Threading",
-      "items": [
-        {
-          "question": "What is a Thread?",
-          "answer": "A thread is a lightweight process that allows concurrent execution."
-        },
-        {
-          "question": "Difference between Runnable and Callable?",
-          "answer": "Runnable does not return result, Callable returns result and can throw checked exceptions."
-        }
-      ]
     }
   ]
 }
