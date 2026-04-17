@@ -1,0 +1,341 @@
+{
+    "concept": "Spring & Microservices",
+    "sections": [
+        {
+            "title": "Spring Core (IoC, DI, Bean Lifecycle)",
+            "items": [
+                {
+                    "question": "In a production system, how would you design and manage dependencies between multiple services using IoC and DI to ensure loose coupling and testability?",
+                    "answer": ""
+                },
+                {
+                    "question": "When multiple implementations of an interface exist, how do you control bean injection and avoid ambiguity in large-scale applications?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you decide between constructor injection and setter injection in a real-world microservice, especially considering immutability and testability?",
+                    "answer": ""
+                },
+                {
+                    "question": "Describe how bean scopes impact application behavior in a multi-threaded web application and when you would use prototype over singleton.",
+                    "answer": ""
+                },
+                {
+                    "question": "How would you troubleshoot and resolve circular dependencies between beans in a Spring application?",
+                    "answer": ""
+                },
+                {
+                    "question": "In what scenarios would you customize the bean lifecycle, and how do initialization and destruction callbacks impact resource management?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you enforce initialization order between dependent beans in complex configurations?",
+                    "answer": ""
+                },
+                {
+                    "question": "How does Spring internally use design patterns (like Proxy, Singleton) to implement DI and AOP, and how does that affect runtime behavior?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Spring Boot Internals",
+            "items": [
+                {
+                    "question": "When a Spring Boot application starts, what are the critical internal steps from bootstrap to application readiness, and where can failures occur?",
+                    "answer": ""
+                },
+                {
+                    "question": "How does auto-configuration decide which beans to load, and how would you debug unexpected bean creation or missing beans?",
+                    "answer": ""
+                },
+                {
+                    "question": "In a multi-environment setup, how do you manage profiles and externalized configurations securely and efficiently?",
+                    "answer": ""
+                },
+                {
+                    "question": "How would you centralize configuration across microservices and handle sensitive data like credentials?",
+                    "answer": ""
+                },
+                {
+                    "question": "When would you override Spring Boot’s default auto-configuration, and what risks does it introduce?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do conditional annotations control bean loading, and where are they useful in real-world systems?",
+                    "answer": ""
+                },
+                {
+                    "question": "How would you replace the embedded server (e.g., Tomcat → Jetty) and what implications does it have on performance and compatibility?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "REST API Design",
+            "items": [
+                {
+                    "question": "How do you design REST APIs that are scalable, versioned, and backward compatible in a distributed system?",
+                    "answer": ""
+                },
+                {
+                    "question": "When choosing between REST and SOAP for an enterprise integration, what trade-offs influence your decision?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you ensure idempotency in APIs, and why is it critical for distributed systems?",
+                    "answer": ""
+                },
+                {
+                    "question": "In what scenarios would you use PUT vs PATCH, and how do you handle partial updates safely?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you design file upload/download APIs for large payloads while ensuring performance and reliability?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you structure controllers to maintain separation of concerns and avoid fat controllers?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you validate and sanitize incoming API requests in a production-grade system?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Data Layer (JPA/Hibernate)",
+            "items": [
+                {
+                    "question": "How do you design the persistence layer to handle high-volume transactions while avoiding common Hibernate performance issues?",
+                    "answer": ""
+                },
+                {
+                    "question": "What are the trade-offs between using JPQL, Criteria API, and native queries in complex applications?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do lazy loading and eager loading impact performance, and how do you prevent N+1 query problems?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you implement pagination and sorting efficiently at the database level?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you configure and manage multiple data sources in a Spring Boot application?",
+                    "answer": ""
+                },
+                {
+                    "question": "How does transaction management work internally, and how do propagation and isolation levels affect data consistency?",
+                    "answer": ""
+                },
+                {
+                    "question": "When would you use stored procedures with Spring, and what are the limitations?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do first-level and second-level caching differ, and when should each be used?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Exception Handling & Validation",
+            "items": [
+                {
+                    "question": "How do you design a global exception handling mechanism that ensures consistent API responses across services?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you differentiate between business exceptions and system exceptions in a REST API?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you implement request validation and ensure meaningful error responses for clients?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle downstream service failures and propagate errors in a microservices architecture?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Security",
+            "items": [
+                {
+                    "question": "How would you secure a Spring Boot application using JWT-based authentication in a stateless architecture?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do authentication and authorization flows differ, and how are they implemented in Spring Security?",
+                    "answer": ""
+                },
+                {
+                    "question": "How does OAuth2 work in a microservices ecosystem, and how do Authorization Server and Resource Server interact?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you secure REST APIs against common vulnerabilities like CSRF, XSS, and injection attacks?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you manage role-based and permission-based access control in large systems?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Microservices & Distributed Systems",
+            "items": [
+                {
+                    "question": "How do you design communication between microservices, and when would you choose REST vs messaging (Kafka/RabbitMQ)?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle service discovery and load balancing in a distributed system?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you implement centralized configuration and dynamic refresh across services?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle inter-service failures using patterns like circuit breaker and retries?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you ensure data consistency across distributed services using eventual consistency or saga patterns?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you design API Gateway responsibilities, and what logic should or should not reside there?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle versioning and backward compatibility across multiple microservices?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Performance & Caching",
+            "items": [
+                {
+                    "question": "How do you implement caching in Spring Boot, and when would you use in-memory vs distributed cache?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you design cache eviction strategies to maintain consistency with the database?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you analyze and optimize performance bottlenecks in a Spring Boot application?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do logging levels impact performance, and how do you manage logging in production systems?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Concurrency & Async",
+            "items": [
+                {
+                    "question": "How do you design asynchronous processing in Spring Boot using @Async, and what are its limitations?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you schedule background jobs and ensure they run reliably in distributed deployments?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle thread safety issues with singleton beans in concurrent environments?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Testing",
+            "items": [
+                {
+                    "question": "How do you design unit tests and integration tests for a Spring Boot application to ensure high coverage and reliability?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you use Mockito effectively to isolate dependencies in service-layer testing?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you test REST controllers and validate request/response flows?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you test transactional behavior and database interactions?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Monitoring & Actuator",
+            "items": [
+                {
+                    "question": "How do you monitor a Spring Boot application in production using Actuator endpoints?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you customize health checks to include database, external APIs, and custom components?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you integrate application metrics with monitoring tools like Prometheus, Grafana, or Splunk?",
+                    "answer": ""
+                }
+            ]
+        },
+        {
+            "title": "Misc",
+            "items": [
+                {
+                    "question": "How do you configure and manage externalized properties using application.properties vs application.yml?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you design logging strategies across microservices for traceability and debugging?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you build and package a Spring Boot application using Maven/Gradle for different environments?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you deploy and scale a Spring Boot microservice in cloud environments like AWS?",
+                    "answer": ""
+                },
+                {
+                    "question": "How do you handle session management in stateless vs stateful architectures?",
+                    "answer": ""
+                },
+                {
+                    "question": "In a Spring Boot application secured with JWT where APIs are successfully accessed via tools like Postman using a valid token, how would you design additional layers of protection to prevent token misuse (e.g., token leakage, replay attacks, unauthorized client access), and what are the limitations of relying solely on JWT for API security in production?",
+                    "answer": ""
+                },
+                {
+                    "question": "Your Spring Boot service is responding slowly under high load (8–10 seconds). How would you systematically identify the bottleneck across layers (API, DB, network) and optimize the system?",
+                    "answer": ""
+                },
+                {
+                    "question": "Your APIs are receiving duplicate requests due to retries in a distributed system. How would you design idempotency and ensure data consistency?",
+                    "answer": ""
+                },
+                {
+                    "question": "In a microservices architecture, one service failure is causing cascading failures across the system. How would you design resilience (circuit breakers, retries, fallbacks) to prevent this?",
+                    "answer": ""
+                }
+            ]
+        }
+    ]
+}

@@ -33,11 +33,11 @@ const UIRenderer = (() => {
                     ${section.title}
                 </div>
 
-                <div>
+                <div class="section-content d-none">
                     ${section.items.map((item, i) => `
                         <div class="question-item">
 
-                            <div><strong>Q${i + 1}.</strong> ${Utils.highlight(item.question, keyword)}</div>
+                            <div><strong>${i + 1}.</strong> ${Utils.highlight(item.question, keyword)}</div>
 
                             <div class="reveal-btn" onclick="UIRenderer.toggleAnswer(this)">
                                 Show Answer

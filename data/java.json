@@ -1,30 +1,97 @@
 {
-  "concept": "Java",
+  "concept": "Core Java",
   "sections": [
     {
-      "title": "Basics",
+      "title": "OOP",
       "items": [
         {
-          "question": "What is JVM?",
-          "answer": "JVM (Java Virtual Machine) is responsible for executing Java bytecode and providing platform independence.",
-          "code": "public class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}"
+          "question": "Can you explain polymorphism with a real example from your project?",
+          "answer": ""
         },
         {
-          "question": "What is JDK vs JRE?",
-          "answer": "JDK includes tools for development (compiler, debugger) while JRE provides runtime environment to execute Java programs."
+          "question": "Where have you used encapsulation in your design, and why is it important?",
+          "answer": ""
+        },
+        {
+          "question": "How do you achieve abstraction in Java? Give a practical scenario.",
+          "answer": ""
+        },
+        {
+          "question": "When would you choose an abstract class over an interface?",
+          "answer": ""
+        },
+        {
+          "question": "What are the real differences between abstract class and interface in terms of design decisions?",
+          "answer": ""
+        },
+        {
+          "question": "How do object-oriented languages differ from object-based ones?",
+          "answer": ""
+        },
+        {
+          "question": "What types of inheritance does Java support, and why doesn’t it support multiple inheritance with classes?",
+          "answer": ""
+        },
+        {
+          "question": "When would you prefer composition over inheritance in real systems?",
+          "answer": ""
+        },
+        {
+          "question": "How do access modifiers impact API design in large applications?",
+          "answer": ""
+        },
+        {
+          "question": "Where have you used static in your project, and what problems can it create?",
+          "answer": ""
+        },
+        {
+          "question": "What’s the difference between static block and static method in real execution?",
+          "answer": ""
+        },
+        {
+          "question": "Why can’t we access instance variables from a static context?",
+          "answer": ""
+        },
+        {
+          "question": "Is calling static methods using object reference a good practice? Why?",
+          "answer": ""
+        },
+        {
+          "question": "Can a class be private in Java? Where is it actually used?",
+          "answer": ""
+        },
+        {
+          "question": "What defines the state of an object in a real application?",
+          "answer": ""
+        },
+        {
+          "question": "How would you design a class so that no one can extend it?",
+          "answer": ""
         }
       ]
     },
     {
-      "title": "OOP Concepts",
+      "title": "String & Immutability",
       "items": [
         {
-          "question": "What are the 4 pillars of OOP?",
-          "answer": "Encapsulation, Inheritance, Polymorphism, and Abstraction."
+          "question": "Why is String immutable in Java? What issues would arise if it wasn’t?",
+          "answer": ""
         },
         {
-          "question": "What is method overloading vs overriding?",
-          "answer": "Overloading is compile-time polymorphism (same method name, different parameters). Overriding is runtime polymorphism (same method in subclass)."
+          "question": "When would you choose StringBuilder vs StringBuffer in a real scenario?",
+          "answer": ""
+        },
+        {
+          "question": "How do you compare two strings correctly, and what mistakes do developers make?",
+          "answer": ""
+        },
+        {
+          "question": "How would you design a custom immutable class?",
+          "answer": ""
+        },
+        {
+          "question": "Apart from String, what other immutable classes have you used and why?",
+          "answer": ""
         }
       ]
     },
@@ -32,25 +99,368 @@
       "title": "Collections",
       "items": [
         {
-          "question": "Difference between ArrayList and LinkedList?",
-          "answer": "ArrayList uses dynamic array (fast read), LinkedList uses nodes (fast insert/delete)."
+          "question": "When would you choose List over Set in a real system?",
+          "answer": ""
         },
         {
-          "question": "What is HashMap?",
-          "answer": "HashMap stores key-value pairs using hashing. It allows one null key and multiple null values."
+          "question": "Why would you prefer ConcurrentHashMap over HashMap in production?",
+          "answer": ""
+        },
+        {
+          "question": "What’s the practical difference between HashMap and HashSet?",
+          "answer": ""
+        },
+        {
+          "question": "Walk me through how HashMap works internally.",
+          "answer": ""
+        },
+        {
+          "question": "What happens when multiple keys fall into the same bucket?",
+          "answer": ""
+        },
+        {
+          "question": "How does hashing help in performance optimization?",
+          "answer": ""
+        },
+        {
+          "question": "What is the internal structure of HashMap after Java 8?",
+          "answer": ""
+        },
+        {
+          "question": "Why is ArrayList preferred over LinkedList in most cases?",
+          "answer": ""
+        },
+        {
+          "question": "Why does List allow duplicates but Set does not—what’s happening internally?",
+          "answer": ""
+        },
+        {
+          "question": "When would LinkedList outperform ArrayList?",
+          "answer": ""
+        },
+        {
+          "question": "What is fail-fast vs fail-safe, and where does it matter in production?",
+          "answer": ""
+        },
+        {
+          "question": "How does TreeSet maintain sorted order?",
+          "answer": ""
+        },
+        {
+          "question": "When would you use WeakHashMap in real applications?",
+          "answer": ""
+        },
+        {
+          "question": "What problem does CopyOnWriteArrayList solve?",
+          "answer": ""
+        },
+        {
+          "question": "How do you make a collection thread-safe?",
+          "answer": ""
+        },
+        {
+          "question": "What’s the difference between Iterator, ListIterator, and Enumeration in usage?",
+          "answer": ""
+        },
+        {
+          "question": "Which collections actually support ListIterator and why?",
+          "answer": ""
+        },
+        {
+          "question": "How do you efficiently iterate a Map<K, List<V>>?",
+          "answer": ""
+        },
+        {
+          "question": "How would you convert a List into a Map using Java 8?",
+          "answer": ""
+        },
+        {
+          "question": "Why does ConcurrentHashMap not allow null keys or values?",
+          "answer": ""
         }
       ]
     },
     {
-      "title": "Threading",
+      "title": "equals & hashCode",
       "items": [
         {
-          "question": "What is a Thread?",
-          "answer": "A thread is a lightweight process that allows concurrent execution."
+          "question": "Why must equals() and hashCode() always be overridden together?",
+          "answer": ""
         },
         {
-          "question": "Difference between Runnable and Callable?",
-          "answer": "Runnable does not return result, Callable returns result and can throw checked exceptions."
+          "question": "What issues arise if you override equals() but not hashCode()?",
+          "answer": ""
+        },
+        {
+          "question": "Can two different objects have the same hashCode? What impact does that have?",
+          "answer": ""
+        },
+        {
+          "question": "Where have you faced bugs related to equals/hashCode in real projects?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Exception Handling",
+      "items": [
+        {
+          "question": "How do you decide between checked and unchecked exceptions?",
+          "answer": ""
+        },
+        {
+          "question": "Where would you use custom exceptions in your application?",
+          "answer": ""
+        },
+        {
+          "question": "What’s the practical difference between Exception and Error?",
+          "answer": ""
+        },
+        {
+          "question": "Can you walk me through Java’s exception hierarchy?",
+          "answer": ""
+        },
+        {
+          "question": "When would you use throw vs throws?",
+          "answer": ""
+        },
+        {
+          "question": "Have you faced ClassCastException in production? What caused it?",
+          "answer": ""
+        },
+        {
+          "question": "How do you design exception handling for a large system?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Multithreading & Concurrency",
+      "items": [
+        {
+          "question": "When do you actually encounter InterruptedException in real scenarios?",
+          "answer": ""
+        },
+        {
+          "question": "How does thread scheduling work internally in JVM?",
+          "answer": ""
+        },
+        {
+          "question": "What problems does synchronization solve?",
+          "answer": ""
+        },
+        {
+          "question": "Where would you use volatile instead of synchronized?",
+          "answer": ""
+        },
+        {
+          "question": "How do wait() and sleep() differ in real execution?",
+          "answer": ""
+        },
+        {
+          "question": "When would you use yield(), and is it reliable?",
+          "answer": ""
+        },
+        {
+          "question": "Can you explain thread lifecycle with real transitions?",
+          "answer": ""
+        },
+        {
+          "question": "What does locking mean in multithreading?",
+          "answer": ""
+        },
+        {
+          "question": "Have you encountered deadlock? How did you debug it?",
+          "answer": ""
+        },
+        {
+          "question": "How does BlockingQueue help in producer-consumer problems?",
+          "answer": ""
+        },
+        {
+          "question": "Why do we use ExecutorService instead of manually creating threads?",
+          "answer": ""
+        },
+        {
+          "question": "Runnable vs Callable—when would you choose one?",
+          "answer": ""
+        },
+        {
+          "question": "Where have you used ThreadLocal in real systems?",
+          "answer": ""
+        },
+        {
+          "question": "Why do we use thread pools in high-load systems?",
+          "answer": ""
+        },
+        {
+          "question": "What happens if you call run() directly instead of start()?",
+          "answer": ""
+        },
+        {
+          "question": "How do you create daemon threads and where are they useful?",
+          "answer": ""
+        },
+        {
+          "question": "How do you design a thread-safe singleton?",
+          "answer": ""
+        },
+        {
+          "question": "In a web application, each request already has a thread—then why do we still use multithreading inside the application?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "JVM & Memory",
+      "items": [
+        {
+          "question": "Can you explain Java architecture from high level to runtime?",
+          "answer": ""
+        },
+        {
+          "question": "How does JVM architecture actually execute your code?",
+          "answer": ""
+        },
+        {
+          "question": "What are different memory areas in JVM and their responsibilities?",
+          "answer": ""
+        },
+        {
+          "question": "How does garbage collection decide when to run?",
+          "answer": ""
+        },
+        {
+          "question": "What’s the difference between Serial and Parallel GC in real usage?",
+          "answer": ""
+        },
+        {
+          "question": "How do you tune heap size in production using JVM flags?",
+          "answer": ""
+        },
+        {
+          "question": "What happens when -Xms and -Xmx are different?",
+          "answer": ""
+        },
+        {
+          "question": "How do you monitor JVM in production?",
+          "answer": ""
+        },
+        {
+          "question": "How do memory leaks still happen in Java?",
+          "answer": ""
+        },
+        {
+          "question": "How would you debug OutOfMemoryError in a live system?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Class Loading & Reflection",
+      "items": [
+        {
+          "question": "How does class loading work from compilation to runtime?",
+          "answer": ""
+        },
+        {
+          "question": "Where have you used reflection, and what are its drawbacks?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Serialization & Cloning",
+      "items": [
+        {
+          "question": "Why do we use serialization in real systems?",
+          "answer": ""
+        },
+        {
+          "question": "What is the role of serialVersionUID?",
+          "answer": ""
+        },
+        {
+          "question": "Where would you use transient keyword?",
+          "answer": ""
+        },
+        {
+          "question": "When would you prefer Externalization over Serialization?",
+          "answer": ""
+        },
+        {
+          "question": "What happens if class structure changes after serialization?",
+          "answer": ""
+        },
+        {
+          "question": "What are different cloning approaches and their trade-offs?",
+          "answer": ""
+        },
+        {
+          "question": "What happens if you clone a singleton?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Java 8",
+      "items": [
+        {
+          "question": "Where does autoboxing create performance issues?",
+          "answer": ""
+        },
+        {
+          "question": "What makes an interface functional?",
+          "answer": ""
+        },
+        {
+          "question": "How do lambda expressions improve code design?",
+          "answer": ""
+        },
+        {
+          "question": "How would you use streams to convert list into map?",
+          "answer": ""
+        },
+        {
+          "question": "Where would you use Predicate in real-world filtering?",
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "title": "Misc",
+      "items": [
+        {
+          "question": "Where would you use enum instead of constants?",
+          "answer": ""
+        },
+        {
+          "question": "What problem do marker interfaces solve?",
+          "answer": ""
+        },
+        {
+          "question": "How is Optional useful in avoiding bugs?",
+          "answer": ""
+        },
+        {
+          "question": "Can main method be overloaded? Does JVM use it?",
+          "answer": ""
+        },
+        {
+          "question": "What are different ways to create objects in Java?",
+          "answer": ""
+        },
+        {
+          "question": "Why is Object class the root of everything?",
+          "answer": ""
+        },
+        {
+          "question": "What are different ways to convert int to String?",
+          "answer": ""
+        },
+        {
+          "question": "Why do we need wrapper classes?",
+          "answer": ""
         }
       ]
     }

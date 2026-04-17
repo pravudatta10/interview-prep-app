@@ -94,8 +94,12 @@ html, body {
     padding: 12px 0;
 }
 
-.answer.hidden {
+.hidden {
     display: none;
+}
+
+.answer {
+    margin-top: 10px;
 }
 
 .reveal-btn {
