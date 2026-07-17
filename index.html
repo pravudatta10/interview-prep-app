@@ -3,12 +3,15 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563EB" />
 
   <title>Interview Prep</title>
 
   <!-- Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,22 +24,57 @@
 
 <body>
 
-  <!-- Mobile Navbar -->
-  <nav class="navbar navbar-light bg-white border-bottom d-md-none">
-    <div class="container-fluid">
-      <button class="btn btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-        ☰
+  <!-- Reading progress bar -->
+  <div class="reading-progress" id="readingProgress" aria-hidden="true"><span id="readingProgressBar"></span></div>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="app-header-left">
+      <button class="icon-btn d-md-none" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <span class="navbar-brand mb-0 h6">Interview Prep</span>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 19V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-name">Interview Prep</span>
+      </div>
+      <span class="brand-divider d-none d-md-inline" aria-hidden="true">/</span>
+      <span class="current-category d-none d-md-inline" id="currentCategoryLabel">Loading…</span>
     </div>
-  </nav>
+
+    <div class="app-header-right">
+      <div class="header-progress d-none d-lg-flex" id="headerProgress" title="Questions viewed this session">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span id="headerProgressText">0 viewed</span>
+      </div>
+      <button class="icon-btn" id="darkModeToggle" aria-label="Toggle dark mode" title="Toggle dark mode (Ctrl/Cmd+J)">
+        <svg id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" class="hidden"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </header>
 
   <div class="app-container">
 
     <!-- Sidebar -->
-    <aside class="sidebar d-none d-md-block">
-      <h6 class="app-title">Concepts</h6>
-      <ul id="conceptList" class="concept-list"></ul>
+    <aside class="sidebar d-none d-md-flex">
+      <div class="sidebar-inner">
+        <div class="sidebar-head">
+          <h6 class="app-title">Concepts</h6>
+        </div>
+        <ul id="conceptList" class="concept-list"></ul>
+
+        <div class="sidebar-footer">
+          <button class="sidebar-footer-btn" id="recentlyViewedBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Recently viewed
+          </button>
+          <div class="kbd-hint">
+            Press <kbd>/</kbd> to search, <kbd>⌘K</kbd> for command
+          </div>
+        </div>
+      </div>
     </aside>
 
     <!-- Mobile Sidebar -->
@@ -53,13 +91,35 @@
     <!-- Main -->
     <main class="main-content">
 
-      <input id="searchInput" class="search-input" placeholder="Search..." />
+      <div class="toolbar">
+        <div class="search-shell">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="searchInput" class="search-input" placeholder="Search Java, Spring Boot, SQL..." aria-label="Search questions" autocomplete="off" />
+          <kbd class="search-kbd">/</kbd>
+        </div>
+      </div>
 
-      <div id="contentContainer"></div>
+      <div id="contentContainer">
+        <div class="skeleton-wrap" id="skeletonWrap" aria-hidden="true">
+          <div class="skeleton-block"></div>
+          <div class="skeleton-block"></div>
+          <div class="skeleton-block"></div>
+        </div>
+      </div>
+
+      <div class="empty-state hidden" id="emptyState">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8.5 11h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p class="empty-title">No questions found</p>
+        <p class="empty-sub">Try a different keyword, or <button type="button" id="clearSearchBtn">clear the search</button> to see everything.</p>
+      </div>
 
     </main>
 
   </div>
+
+  <button class="scroll-top-btn hidden" id="scrollTopBtn" aria-label="Scroll to top">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -68,6 +128,7 @@
   <script src="./js/data.service.js"></script>
   <script src="./js/ui.renderer.js"></script>
   <script src="./js/app.js"></script>
+  <script src="./js/enhancements.js"></script>
 
 </body>
 
