@@ -51,8 +51,7 @@ const App = (() => {
                 const filtered = sections.map(sec => ({
                     title: sec.title,
                     items: sec.items.filter(item =>
-                        item.question.toLowerCase().includes(keyword) ||
-                        item.answer.toLowerCase().includes(keyword)
+                        Utils.searchableText(item).toLowerCase().includes(keyword)
                     )
                 })).filter(sec => sec.items.length > 0);
 

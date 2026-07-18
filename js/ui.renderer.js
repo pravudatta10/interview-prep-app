@@ -44,7 +44,7 @@ const UIRenderer = (() => {
     }
 
     function estimateReadTime(item) {
-        const words = ((item.question || "") + " " + (item.answer || "") + " " + (item.code || ""))
+        const words = ((item.question || "") + " " + Utils.flattenToText(item.answer) + " " + Utils.flattenToText(item.code))
             .trim().split(/\s+/).filter(Boolean).length;
         const mins = Math.max(1, Math.round(words / 180));
         return `${mins} min read`;
@@ -53,7 +53,7 @@ const UIRenderer = (() => {
     // Purely decorative difficulty derived from content length so it stays
     // stable for a given question without needing new data fields.
     function estimateDifficulty(item) {
-        const len = (item.question || "").length + (item.answer || "").length;
+        const len = (item.question || "").length + Utils.flattenToText(item.answer).length;
         if (len < 220) return { label: "Easy", cls: "diff-easy" };
         if (len < 600) return { label: "Medium", cls: "diff-medium" };
         return { label: "Hard", cls: "diff-hard" };
@@ -61,6 +61,226 @@ const UIRenderer = (() => {
 
     function escapeAttr(str) {
         return String(str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    }
+
+    // =====================================================================
+    // Dynamic, data-driven answer rendering
+    //
+    // `item.answer` may be:
+    //   - a legacy plain string                      -> treated as interviewAnswer
+    //   - a rich object of named sections             -> rendered per KNOWN_SECTIONS
+    // `item.code` (legacy top-level field) folds into the codeExample section.
+    //
+    // Any section that is null/undefined/empty string/whitespace/empty
+    // array/empty object is skipped entirely — no headings, no empty cards.
+    // Any key NOT in KNOWN_SECTIONS still renders automatically via a
+    // type-inferred generic renderer, so new sections are plug-and-play.
+    // =====================================================================
+
+    const KNOWN_SECTIONS = [
+        { key: "interviewAnswer", label: "Interview Answer", type: "prose" },
+        { key: "deepDive", label: "Deep Dive", type: "prose" },
+        { key: "scenario", label: "Scenario", type: "prose" },
+        { key: "realWorldExample", label: "Real World Example", type: "prose" },
+        { key: "codeExample", label: "Code Example", type: "code" },
+        { key: "diagram", label: "Diagram", type: "diagram" },
+        { key: "comparison", label: "Comparison", type: "comparison" },
+        { key: "followUpQuestions", label: "Follow-up Questions", type: "list" },
+        { key: "commonMistakes", label: "Common Mistakes", type: "list" },
+        { key: "optimizationTips", label: "Optimization Tips", type: "list" },
+        { key: "keyTakeaway", label: "Key Takeaway", type: "prose" },
+        { key: "references", label: "References", type: "list" }
+    ];
+
+    function labelFromKey(key) {
+        return key
+            .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+            .replace(/[_-]+/g, " ")
+            .replace(/^./, c => c.toUpperCase())
+            .trim();
+    }
+
+    // Normalizes item.answer + legacy item.code into one ordered map of
+    // { key -> { label, type, value } }, known sections first (in the
+    // fixed order above), then any other keys in the order they appear.
+    function collectAnswerSections(item) {
+        const raw = item.answer;
+        let data = {};
+
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+            data = raw;
+        } else if (typeof raw === "string" && raw.trim()) {
+            data = { interviewAnswer: raw };
+        }
+
+        const entries = [];
+        const seen = new Set();
+
+        KNOWN_SECTIONS.forEach(def => {
+            if (Utils.isMeaningful(data[def.key])) {
+                entries.push({ key: def.key, label: def.label, type: def.type, value: data[def.key] });
+                seen.add(def.key);
+            }
+        });
+
+        Object.keys(data).forEach(key => {
+            if (seen.has(key)) return;
+            if (!Utils.isMeaningful(data[key])) return;
+            entries.push({ key, label: labelFromKey(key), type: null, value: data[key] });
+        });
+
+        // Legacy top-level `code` field, only if no codeExample already covered it
+        if (Utils.isMeaningful(item.code) && !seen.has("codeExample")) {
+            entries.push({ key: "codeExample", label: "Code Example", type: "code", value: item.code });
+        }
+
+        return entries;
+    }
+
+    // ---- lightweight, dependency-free "markdown-lite" for prose fields ----
+    function renderProse(text, keyword) {
+        const highlighted = Utils.highlight(Utils.escapeHtml(String(text)), keyword);
+        const withInlineCode = highlighted.replace(/`([^`]+)`/g, "<code>$1</code>");
+        const withBold = withInlineCode.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        const paragraphs = withBold
+            .split(/\n{2,}/)
+            .map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+            .join("");
+        return `<div class="prose">${paragraphs}</div>`;
+    }
+
+    function renderCode(value) {
+        let code = value;
+        let lang = "";
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+            code = value.code || value.snippet || "";
+            lang = value.language || value.lang || "";
+        }
+        if (!Utils.isMeaningful(code)) return "";
+        return `
+            <pre data-lang="${escapeAttr(lang || "code")}">
+<button class="btn btn-light btn-sm" onclick="Utils.copyCode(this)">Copy</button>
+<code${lang ? ` class="language-${escapeAttr(lang)}"` : ""}>${Utils.escapeHtml(String(code))}</code>
+            </pre>`;
+    }
+
+    function renderDiagram(value, keyword) {
+        if (typeof value === "string") {
+            return `<div class="diagram-panel">${renderProse(value, keyword)}</div>`;
+        }
+        if (value && typeof value === "object") {
+            const src = value.image || value.url || value.src;
+            if (src) {
+                const alt = escapeAttr(value.alt || value.caption || "Diagram");
+                return `<figure class="diagram-figure">
+                    <img class="diagram-image" src="${escapeAttr(src)}" alt="${alt}" loading="lazy">
+                    ${value.caption ? `<figcaption>${Utils.escapeHtml(value.caption)}</figcaption>` : ""}
+                </figure>`;
+            }
+            if (Utils.isMeaningful(value.description)) {
+                return `<div class="diagram-panel">${renderProse(value.description, keyword)}</div>`;
+            }
+        }
+        return "";
+    }
+
+    function renderListEntry(entry, keyword) {
+        if (typeof entry === "string") {
+            return `<li>${Utils.highlight(Utils.escapeHtml(entry), keyword)}</li>`;
+        }
+        if (entry && typeof entry === "object") {
+            // Common shape: follow-up { question, answer }
+            if (Utils.isMeaningful(entry.question)) {
+                return `<li class="mini-qa">
+                    <span class="mini-q">${Utils.highlight(Utils.escapeHtml(entry.question), keyword)}</span>
+                    ${Utils.isMeaningful(entry.answer) ? `<span class="mini-a">${Utils.highlight(Utils.escapeHtml(entry.answer), keyword)}</span>` : ""}
+                </li>`;
+            }
+            // Common shape: reference { title, url }
+            if (Utils.isMeaningful(entry.url) || Utils.isMeaningful(entry.link)) {
+                const url = escapeAttr(entry.url || entry.link);
+                const title = Utils.escapeHtml(entry.title || entry.name || entry.url || entry.link);
+                return `<li><a class="ref-link" href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></li>`;
+            }
+            // Generic object entry: key: value pairs
+            const parts = Object.entries(entry)
+                .filter(([, v]) => Utils.isMeaningful(v))
+                .map(([k, v]) => `<span><strong>${labelFromKey(k)}:</strong> ${Utils.escapeHtml(Utils.flattenToText(v))}</span>`)
+                .join("");
+            return parts ? `<li class="mini-kv">${parts}</li>` : "";
+        }
+        return "";
+    }
+
+    function renderList(value, keyword) {
+        const arr = Array.isArray(value) ? value : Object.values(value || {});
+        const items = arr.map(entry => renderListEntry(entry, keyword)).filter(Boolean).join("");
+        return items ? `<ul class="section-list">${items}</ul>` : "";
+    }
+
+    function renderComparisonTable(headers, rows) {
+        const head = `<tr>${headers.map(h => `<th>${Utils.escapeHtml(h)}</th>`).join("")}</tr>`;
+        const body = rows.map(row => `<tr>${row.map((cell, i) =>
+            `<td data-label="${escapeAttr(headers[i] || "")}">${Utils.escapeHtml(Utils.flattenToText(cell))}</td>`
+        ).join("")}</tr>`).join("");
+        return `<div class="comparison-table-wrap"><table class="comparison-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    }
+
+    function renderComparison(value) {
+        if (Array.isArray(value) && value.length && typeof value[0] === "object") {
+            const headers = Object.keys(value[0]);
+            const rows = value.map(row => headers.map(h => row[h]));
+            return renderComparisonTable(headers.map(labelFromKey), rows);
+        }
+        if (value && typeof value === "object") {
+            const keys = Object.keys(value);
+            const arrays = keys.every(k => Array.isArray(value[k]));
+            if (arrays) {
+                const maxLen = Math.max(...keys.map(k => value[k].length));
+                const rows = [];
+                for (let i = 0; i < maxLen; i++) {
+                    rows.push(keys.map(k => value[k][i] ?? ""));
+                }
+                return renderComparisonTable(keys, rows);
+            }
+            // Object of scalars -> simple two-column key/value table
+            const rows = keys.filter(k => Utils.isMeaningful(value[k])).map(k => [labelFromKey(k), value[k]]);
+            return rows.length ? renderComparisonTable(["", ""], rows) : "";
+        }
+        return "";
+    }
+
+    // Renders one section value based on its declared or inferred type.
+    function renderSectionValue(entry, keyword) {
+        const { type, value } = entry;
+
+        if (type === "code") return renderCode(value);
+        if (type === "diagram") return renderDiagram(value, keyword);
+        if (type === "comparison") return renderComparison(value);
+        if (type === "list") return renderList(value, keyword);
+        if (type === "prose") {
+            return typeof value === "string" ? renderProse(value, keyword) : renderList(value, keyword);
+        }
+
+        // Unknown key: infer a sensible renderer from the value's shape so
+        // brand-new fields work without any code changes.
+        if (typeof value === "string") return renderProse(value, keyword);
+        if (Array.isArray(value)) return renderList(value, keyword);
+        if (typeof value === "object") return renderComparison(value) || renderProse(Utils.flattenToText(value), keyword);
+        return renderProse(String(value), keyword);
+    }
+
+    function renderAnswerBody(item, keyword) {
+        const sections = collectAnswerSections(item);
+        return sections.map(entry => {
+            const body = renderSectionValue(entry, keyword);
+            if (!body) return "";
+            return `
+                <div class="answer-block">
+                    <h4 class="answer-block-title">${Utils.escapeHtml(entry.label)}</h4>
+                    <div class="answer-block-body">${body}</div>
+                </div>`;
+        }).join("");
     }
 
     function renderSections(sections) {
@@ -91,6 +311,8 @@ const UIRenderer = (() => {
                 <div class="section-content d-none">
                     ${section.items.map((item, i) => {
                         const diff = estimateDifficulty(item);
+                        const answerHtml = renderAnswerBody(item, keyword);
+                        const hasAnswer = answerHtml.trim().length > 0;
                         return `
                         <div class="question-item" style="--card-delay:${i * 30}ms" data-q-key="${escapeAttr(section.title + '::' + item.question)}">
                             <div class="question-item-head">
@@ -107,21 +329,16 @@ const UIRenderer = (() => {
                                 <span class="read-time">${estimateReadTime(item)}</span>
                             </div>
 
-                            <div class="reveal-btn" onclick="UIRenderer.toggleAnswer(this)" role="button" tabindex="0"
-                                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="reveal-icon"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                <span class="reveal-btn-text">Show Answer</span>
-                            </div>
+                            ${hasAnswer ? `
+                                <div class="reveal-btn" onclick="UIRenderer.toggleAnswer(this)" role="button" tabindex="0"
+                                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="reveal-icon"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span class="reveal-btn-text">Show Answer</span>
+                                </div>
 
-                            <div class="answer hidden">
-                                ${Utils.highlight(item.answer, keyword)}
-                            </div>
-
-                            ${item.code ? `
-                                <pre class="hidden">
-<button class="btn btn-light btn-sm" onclick="Utils.copyCode(this)">Copy</button>
-<code>${item.code}</code>
-                                </pre>
+                                <div class="answer hidden">
+                                    ${answerHtml}
+                                </div>
                             ` : ''}
 
                         </div>

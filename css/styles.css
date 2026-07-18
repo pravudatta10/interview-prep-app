@@ -659,10 +659,8 @@ kbd {
 
 .answer {
     margin: 12px 0 0 36px;
-    padding: 14px 16px;
-    background: var(--bg);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-md);
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
     line-height: 1.65;
     color: var(--text-primary);
     font-size: 13.5px;
@@ -690,7 +688,7 @@ pre {
     position: relative;
     background: var(--code-bg) !important;
     padding: 42px 18px 18px !important;
-    margin: 12px 0 0 36px;
+    margin: 0;
     border-radius: var(--radius-md);
     overflow-x: auto;
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -700,7 +698,7 @@ pre {
 pre.hidden { display: none; }
 
 pre::before {
-    content: "code";
+    content: attr(data-lang);
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 34px;
@@ -743,6 +741,151 @@ pre .btn.btn-light.btn-sm {
 }
 pre .btn.btn-light.btn-sm:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
 pre .btn.btn-light.btn-sm:active { transform: scale(0.95); }
+
+/* =========================================================
+   Dynamic answer sections (data-driven — only rendered when present)
+   ========================================================= */
+.answer-block { margin-bottom: 16px; }
+.answer-block:last-child { margin-bottom: 0; }
+
+.answer-block-title {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.answer-block-body { font-size: 13.5px; }
+
+.prose p { margin: 0 0 8px; }
+.prose p:last-child { margin-bottom: 0; }
+.prose code {
+    background: var(--primary-light);
+    color: var(--primary-dark, var(--primary));
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.92em;
+}
+
+.section-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.section-list > li {
+    position: relative;
+    padding-left: 18px;
+}
+.section-list > li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.55;
+}
+
+.mini-qa { display: flex; flex-direction: column; gap: 2px; }
+.mini-q { font-weight: 600; }
+.mini-a { color: var(--text-secondary); }
+
+.mini-kv { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+
+.ref-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+.ref-link:hover { text-decoration: underline; }
+
+/* Comparison tables — collapse into stacked cards on narrow screens so
+   nothing ever needs horizontal page scrolling */
+.comparison-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    -webkit-overflow-scrolling: touch;
+}
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.comparison-table th, .comparison-table td {
+    padding: 9px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft, var(--border));
+    white-space: nowrap;
+}
+.comparison-table tr:last-child td { border-bottom: none; }
+.comparison-table th {
+    background: var(--bg);
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 560px) {
+    .comparison-table-wrap { border: none; overflow: visible; }
+    .comparison-table thead { display: none; }
+    .comparison-table, .comparison-table tbody, .comparison-table tr, .comparison-table td {
+        display: block;
+        width: 100%;
+    }
+    .comparison-table th, .comparison-table td { white-space: normal; }
+    .comparison-table tr {
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+    .comparison-table tr:last-child { margin-bottom: 0; }
+    .comparison-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        border-bottom: 1px solid var(--border-soft, var(--border));
+    }
+    .comparison-table td:last-child { border-bottom: none; }
+    .comparison-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+    }
+}
+
+.diagram-panel {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    background: var(--bg);
+}
+.diagram-figure { margin: 0; }
+.diagram-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: block;
+}
+.diagram-figure figcaption {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
 
 /* =========================================================
    Empty state

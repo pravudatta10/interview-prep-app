@@ -6,7 +6,24 @@
       "items": [
         {
           "question": "Can you explain polymorphism with a real example from your project?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Polymorphism lets the same method call behave differently depending on the actual runtime type of the object, even when the reference type is a common superclass or interface.",
+            "scenario": "In a payments service, a `PaymentProcessor` interface is implemented by `CardProcessor`, `UpiProcessor`, and `WalletProcessor`. The checkout flow calls `processor.pay(order)` without ever knowing which concrete class it's holding — the JVM resolves the correct `pay()` implementation at runtime.",
+            "deepDive": "This works through **dynamic method dispatch**: the JVM looks up the method in the object's actual class vtable at call time, not the reference's declared type. Overriding (`@Override`) enables runtime polymorphism; overloading is resolved at compile time and is really just name reuse, not true polymorphism.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface PaymentProcessor {\n    void pay(Order order);\n}\n\nclass CardProcessor implements PaymentProcessor {\n    public void pay(Order order) {\n        System.out.println(\"Charging card for \" + order.getAmount());\n    }\n}\n\nPaymentProcessor processor = new CardProcessor();\nprocessor.pay(order); // resolved at runtime"
+            },
+            "commonMistakes": [
+              "Confusing method overloading (compile-time) with true polymorphism (runtime dispatch)",
+              "Calling overridable methods from a constructor, which can run before the subclass is fully initialized"
+            ],
+            "followUpQuestions": [
+              "How does the JVM implement dynamic dispatch internally?",
+              "What happens to polymorphism when a method is marked `final` or `static`?"
+            ],
+            "keyTakeaway": "Polymorphism decouples *what* code calls from *which* implementation runs, which is what makes interfaces and plugin-style architectures possible."
+          }
         },
         {
           "question": "Where have you used encapsulation in your design, and why is it important?",
@@ -112,7 +129,37 @@
         },
         {
           "question": "Walk me through how HashMap works internally.",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "HashMap stores entries in an array of buckets. A key's `hashCode()` is run through a spreading function to pick a bucket index; collisions in the same bucket are chained as a linked list, which converts to a red-black tree once a bucket gets too long.",
+            "diagram": "hash(key) --> spread bits --> bucket index\n\n[0] -> null\n[1] -> (K1,V1) -> (K5,V5)   <- collision chain\n[2] -> (K2,V2)\n[3] -> null\n...\n[n] -> (K9,V9)",
+            "comparison": {
+              "HashMap": [
+                "Not thread-safe",
+                "Allows one null key",
+                "Fastest for single-threaded use"
+              ],
+              "Hashtable": [
+                "Thread-safe (fully synchronized)",
+                "No null keys or values",
+                "Legacy, rarely used today"
+              ],
+              "ConcurrentHashMap": [
+                "Thread-safe via striped locking",
+                "No null keys or values",
+                "Best for concurrent access"
+              ]
+            },
+            "optimizationTips": [
+              "Set an initial capacity if you know the approximate size, to avoid repeated resizing",
+              "Override `hashCode()` well to spread keys evenly across buckets and avoid long chains"
+            ],
+            "references": [
+              {
+                "title": "JDK HashMap source (OpenJDK)",
+                "url": "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
+              }
+            ]
+          }
         },
         {
           "question": "What happens when multiple keys fall into the same bucket?",
@@ -428,6 +475,151 @@
       ]
     },
     {
+      "title": "Garbage Collection (GC)",
+      "items": [
+        {
+          "question": "What is Garbage Collection, and why does Java need it?",
+          "answer": ""
+        },
+        {
+          "question": "Which memory areas are managed by Garbage Collection, and which are not?",
+          "answer": ""
+        },
+        {
+          "question": "What makes an object eligible for Garbage Collection?",
+          "answer": ""
+        },
+        {
+          "question": "What are GC Roots, and how does the JVM determine whether an object is alive?",
+          "answer": ""
+        },
+        {
+          "question": "Why doesn't Java use reference counting for Garbage Collection?",
+          "answer": ""
+        },
+        {
+          "question": "Can Java collect cyclic references? Explain with an example.",
+          "answer": ""
+        },
+        {
+          "question": "Walk me through the complete lifecycle of an object in the JVM.",
+          "answer": ""
+        },
+        {
+          "question": "Explain the phases of Garbage Collection (Mark, Sweep, Compact).",
+          "answer": ""
+        },
+        {
+          "question": "What happens during the Mark phase?",
+          "answer": ""
+        },
+        {
+          "question": "What happens during the Sweep phase?",
+          "answer": ""
+        },
+        {
+          "question": "What happens during the Compact phase, and why is it needed?",
+          "answer": ""
+        },
+        {
+          "question": "What is the difference between Minor GC, Major GC, and Full GC?",
+          "answer": ""
+        },
+        {
+          "question": "Explain Young Generation, Old Generation, Eden, and Survivor Spaces.",
+          "answer": ""
+        },
+        {
+          "question": "What happens internally when Eden Space becomes full?",
+          "answer": ""
+        },
+        {
+          "question": "How does object promotion from Young Generation to Old Generation work?",
+          "answer": ""
+        },
+        {
+          "question": "What is Stop-The-World (STW), and why does it occur?",
+          "answer": ""
+        },
+        {
+          "question": "How does the G1 Garbage Collector work internally?",
+          "answer": ""
+        },
+        {
+          "question": "Why did G1 become the default Garbage Collector?",
+          "answer": ""
+        },
+        {
+          "question": "Compare G1 GC, Parallel GC, CMS, and ZGC.",
+          "answer": ""
+        },
+        {
+          "question": "When would you choose G1 GC over ZGC, and vice versa?",
+          "answer": ""
+        },
+        {
+          "question": "What are Strong, Soft, Weak, and Phantom References, and when would you use them?",
+          "answer": ""
+        },
+        {
+          "question": "Why was finalize() deprecated?",
+          "answer": ""
+        },
+        {
+          "question": "Can System.gc() force Garbage Collection?",
+          "answer": ""
+        },
+        {
+          "question": "Can Java still have memory leaks even though it has Garbage Collection?",
+          "answer": ""
+        },
+        {
+          "question": "What are the most common causes of memory leaks in Java applications?",
+          "answer": ""
+        },
+        {
+          "question": "How would you investigate a production memory leak?",
+          "answer": ""
+        },
+        {
+          "question": "Which JVM tools do you use to analyze Garbage Collection issues?",
+          "answer": ""
+        },
+        {
+          "question": "How do you analyze GC logs to identify performance bottlenecks?",
+          "answer": ""
+        },
+        {
+          "question": "Your application has frequent Full GCs. How would you troubleshoot the issue?",
+          "answer": ""
+        },
+        {
+          "question": "Heap usage keeps increasing even after GC. What could be the reasons?",
+          "answer": ""
+        },
+        {
+          "question": "Your application's response time suddenly increases from milliseconds to several seconds. How would you determine whether GC is responsible?",
+          "answer": ""
+        },
+        {
+          "question": "Your Kubernetes pod is getting OOMKilled. How would you investigate the root cause?",
+          "answer": ""
+        },
+        {
+          "question": "Which JVM parameters do you commonly tune for Garbage Collection in production?",
+          "answer": ""
+        },
+        {
+          "question": "Why can increasing the heap size sometimes make application performance worse?",
+          "answer": ""
+        },
+        {
+          "question": "Which Garbage Collector would you recommend for a large-scale Spring Boot microservices architecture, and why?",
+          "answer": ""
+        }
+      ]
+    },
+    {
       "title": "Misc",
       "items": [
         {
@@ -460,7 +652,7 @@
         },
         {
           "question": "Why do we need wrapper classes?",
-          "answer": ""
+          "answer": "Wrapper classes (Integer, Boolean, Double, etc.) let primitives be used anywhere an Object is required — in collections like List<Integer>, in generics, and with APIs like Optional — since Java generics can't work with raw primitives directly."
         }
       ]
     }
