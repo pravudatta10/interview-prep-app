@@ -7,83 +7,1511 @@
         {
           "question": "Can you explain polymorphism with a real example from your project?",
           "answer": {
-            "interviewAnswer": "Polymorphism lets the same method call behave differently depending on the actual runtime type of the object, even when the reference type is a common superclass or interface.",
-            "scenario": "In a payments service, a `PaymentProcessor` interface is implemented by `CardProcessor`, `UpiProcessor`, and `WalletProcessor`. The checkout flow calls `processor.pay(order)` without ever knowing which concrete class it's holding — the JVM resolves the correct `pay()` implementation at runtime.",
-            "deepDive": "This works through **dynamic method dispatch**: the JVM looks up the method in the object's actual class vtable at call time, not the reference's declared type. Overriding (`@Override`) enables runtime polymorphism; overloading is resolved at compile time and is really just name reuse, not true polymorphism.",
+            "interviewAnswer": "Polymorphism allows the same interface or parent reference to invoke different implementations at runtime. In production systems, it helps us write loosely coupled, extensible code. Instead of depending on concrete classes, our business logic depends on abstractions, making it easy to add new implementations without modifying existing code. Runtime polymorphism is achieved through method overriding, while method overloading is resolved at compile time.",
+            "scenario": "In one of our procurement microservices, we had a NotificationService interface with implementations like EmailNotificationService, SlackNotificationService, and PubSubNotificationService. Depending on tenant configuration, Spring injected the appropriate implementation. The business layer simply called notificationService.send(event) without knowing which implementation was executing. Later, when Microsoft Teams notifications were introduced, we added another implementation without changing the existing business logic, following the Open-Closed Principle.",
+            "deepDive": "Runtime polymorphism is implemented using Dynamic Method Dispatch. Every object internally knows its actual runtime type. When a method is invoked through a parent reference, JVM performs virtual method lookup (vtable lookup) to determine the correct overridden implementation. Methods declared as static, private, or final are resolved during compile time because they cannot be overridden.",
             "codeExample": {
               "language": "java",
-              "code": "interface PaymentProcessor {\n    void pay(Order order);\n}\n\nclass CardProcessor implements PaymentProcessor {\n    public void pay(Order order) {\n        System.out.println(\"Charging card for \" + order.getAmount());\n    }\n}\n\nPaymentProcessor processor = new CardProcessor();\nprocessor.pay(order); // resolved at runtime"
+              "code": "public interface NotificationService {\n    void send(String message);\n}\n\nclass EmailNotificationService implements NotificationService {\n    @Override\n    public void send(String message) {\n        System.out.println(\"Email: \" + message);\n    }\n}\n\nclass SlackNotificationService implements NotificationService {\n    @Override\n    public void send(String message) {\n        System.out.println(\"Slack: \" + message);\n    }\n}\n\nNotificationService service = new EmailNotificationService();\nservice.send(\"Order Created\");"
             },
+            "performance": "The virtual method lookup introduces a very small overhead, but modern JVM JIT compilation aggressively inlines hot methods, making polymorphic calls nearly as fast as direct method invocations.",
+            "bestPractices": [
+              "Program to interfaces instead of implementations.",
+              "Keep interfaces focused on a single responsibility.",
+              "Use dependency injection to resolve implementations instead of creating objects manually."
+            ],
             "commonMistakes": [
-              "Confusing method overloading (compile-time) with true polymorphism (runtime dispatch)",
-              "Calling overridable methods from a constructor, which can run before the subclass is fully initialized"
+              "Confusing method overloading with runtime polymorphism.",
+              "Using instanceof everywhere instead of leveraging polymorphism.",
+              "Calling overridable methods inside constructors."
             ],
             "followUpQuestions": [
-              "How does the JVM implement dynamic dispatch internally?",
-              "What happens to polymorphism when a method is marked `final` or `static`?"
+              "How does JVM perform dynamic dispatch internally?",
+              "Can static methods participate in polymorphism?",
+              "Why are private methods not polymorphic?"
             ],
-            "keyTakeaway": "Polymorphism decouples *what* code calls from *which* implementation runs, which is what makes interfaces and plugin-style architectures possible."
+            "interviewerTips": [
+              "Mention real-world frameworks like Spring Dependency Injection.",
+              "Explain why polymorphism improves maintainability rather than just defining it."
+            ],
+            "keyTakeaway": "Polymorphism allows software to remain extensible by separating business logic from concrete implementations."
           }
         },
         {
           "question": "Where have you used encapsulation in your design, and why is it important?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Encapsulation means hiding an object's internal state and exposing only controlled operations. Rather than allowing direct access to fields, we expose behavior through methods. This prevents invalid object states and makes future implementation changes transparent to consumers.",
+            "scenario": "In our procurement application, the Contract entity never exposed setters for critical fields like contractStatus or approvalLevel. Instead, we exposed methods such as approve(), reject(), and expire(). Each method validated business rules before updating the state. This prevented invalid status transitions and ensured data consistency across services.",
+            "deepDive": "Encapsulation is achieved using access modifiers. Private fields cannot be modified directly. Public methods enforce validation and business rules before changing internal state. This follows the Information Hiding principle and reduces coupling between classes.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class Contract {\n    private ContractStatus status;\n\n    public void approve() {\n        if(status == ContractStatus.PENDING) {\n            status = ContractStatus.APPROVED;\n        }\n    }\n\n    public ContractStatus getStatus() {\n        return status;\n    }\n}"
+            },
+            "performance": "Encapsulation itself has negligible runtime cost. Its main benefit is maintainability and preventing invalid state changes.",
+            "bestPractices": [
+              "Prefer immutable objects where possible.",
+              "Avoid exposing mutable collections directly.",
+              "Validate state transitions inside domain methods."
+            ],
+            "commonMistakes": [
+              "Generating setters for every field.",
+              "Returning internal mutable collections directly.",
+              "Making fields public for convenience."
+            ],
+            "followUpQuestions": [
+              "How do immutable classes improve encapsulation?",
+              "Can encapsulation exist without inheritance?"
+            ],
+            "interviewerTips": [
+              "Talk about protecting business rules instead of only mentioning private variables."
+            ],
+            "keyTakeaway": "Encapsulation protects object integrity by allowing state changes only through controlled business operations."
+          }
         },
         {
           "question": "How do you achieve abstraction in Java? Give a practical scenario.",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Abstraction focuses on exposing only what an object does while hiding how it performs the work. In Java, we achieve abstraction primarily using interfaces and abstract classes. Consumers interact with the abstraction rather than the implementation.",
+            "scenario": "Our payment integration supported multiple providers such as Stripe, Razorpay, and PayPal. Business services depended only on the PaymentGateway interface. Each provider implemented its own authentication, retries, and API integration internally. Switching providers required only configuration changes without impacting business logic.",
+            "deepDive": "Interfaces define contracts, while implementations contain the actual business logic. Spring Dependency Injection automatically injects the correct implementation, allowing applications to remain loosely coupled.",
+            "codeExample": {
+              "language": "java",
+              "code": "public interface PaymentGateway {\n    PaymentResponse pay(Order order);\n}\n\nclass StripeGateway implements PaymentGateway {\n    public PaymentResponse pay(Order order) {\n        return new PaymentResponse();\n    }\n}"
+            },
+            "performance": "Abstraction has negligible runtime overhead. It greatly improves extensibility and testing by allowing mock implementations.",
+            "bestPractices": [
+              "Expose only business capabilities.",
+              "Hide implementation details.",
+              "Use interfaces for service contracts."
+            ],
+            "commonMistakes": [
+              "Creating interfaces with only one unnecessary implementation.",
+              "Putting business logic inside interfaces."
+            ],
+            "followUpQuestions": [
+              "Abstract class vs interface?",
+              "How does Spring leverage abstraction?"
+            ],
+            "interviewerTips": [
+              "Explain abstraction using a real microservice or payment example."
+            ],
+            "keyTakeaway": "Abstraction reduces coupling by separating 'what to do' from 'how it is done'."
+          }
         },
         {
           "question": "When would you choose an abstract class over an interface?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "I choose an interface when multiple implementations only need to follow the same contract. I choose an abstract class when several implementations share common state or reusable logic. Abstract classes reduce code duplication while interfaces maximize flexibility.",
+            "scenario": "In one project, every external API connector required common retry logic, request logging, and authentication. Instead of duplicating this across implementations, we created an AbstractConnector class containing the shared implementation, while subclasses only implemented provider-specific API calls.",
+            "deepDive": "Interfaces support multiple inheritance of type, whereas Java allows only single inheritance for classes. Abstract classes can contain constructors, protected fields, and concrete methods, making them suitable for code reuse.",
+            "codeExample": {
+              "language": "java",
+              "code": "public abstract class AbstractConnector {\n\n    protected void authenticate() {\n        System.out.println(\"Authentication\");\n    }\n\n    public abstract void connect();\n}\n\nclass SalesforceConnector extends AbstractConnector {\n\n    @Override\n    public void connect() {\n        authenticate();\n        System.out.println(\"Connected\");\n    }\n}"
+            },
+            "performance": "There is almost no performance difference. The decision should be based on design rather than execution speed.",
+            "bestPractices": [
+              "Use interfaces for contracts.",
+              "Use abstract classes for reusable implementation.",
+              "Keep abstract classes cohesive."
+            ],
+            "commonMistakes": [
+              "Using abstract classes only to share constants.",
+              "Making deep inheritance hierarchies.",
+              "Putting unrelated functionality into one abstract class."
+            ],
+            "followUpQuestions": [
+              "Can an abstract class implement an interface?",
+              "Can an abstract class have constructors?",
+              "Can interfaces have default methods?"
+            ],
+            "interviewerTips": [
+              "Mention that modern Java encourages interfaces with default methods, but abstract classes are still valuable for shared state and reusable implementation."
+            ],
+            "keyTakeaway": "Choose interfaces for capabilities and flexibility; choose abstract classes when multiple implementations share behavior or state."
+          }
         },
         {
           "question": "What are the real differences between abstract class and interface in terms of design decisions?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "From a design perspective, I don't start by asking 'Which one has constructors?' or 'Which one supports multiple inheritance?'. I start by asking whether I'm defining a capability or sharing a common implementation. If multiple classes only need to follow the same contract, I use an interface. If they also share common state, reusable methods, or lifecycle logic, I use an abstract class. In modern Spring Boot applications, service contracts are almost always interfaces, while abstract classes are mainly used for framework-level reusable implementations.",
+            "scenario": "In one of our procurement integrations, we had multiple connectors like SAPConnector, OracleConnector and WorkdayConnector. Every connector needed authentication, retry handling, request logging and audit tracking. Instead of duplicating this code, we created an AbstractConnector containing all common logic while each connector only implemented provider-specific APIs. On the other hand, our NotificationService remained an interface because Email, Slack and Pub/Sub implementations shared no common state.",
+            "deepDive": "Interfaces represent behavior. Since Java 8 they can contain default and static methods, but they should still primarily define contracts. Abstract classes can maintain object state, constructors, protected members and reusable implementations. Since Java supports multiple interface inheritance but only single class inheritance, abstract classes should only be introduced when code reuse genuinely exists.",
+            "codeExample": {
+              "language": "java",
+              "code": "public interface NotificationService {\n    void send(Notification notification);\n}\n\npublic abstract class AbstractConnector {\n\n    protected void authenticate() {\n        // common authentication\n    }\n\n    protected void logRequest() {\n        // common logging\n    }\n\n    public abstract Response execute(Request request);\n}"
+            },
+            "performance": "There is virtually no meaningful runtime performance difference. The choice should always be based on maintainability and extensibility rather than execution speed.",
+            "bestPractices": [
+              "Prefer interfaces for business service contracts.",
+              "Use abstract classes only when multiple implementations share common code.",
+              "Avoid creating abstract classes with unrelated responsibilities.",
+              "Favor composition over inheritance whenever possible."
+            ],
+            "commonMistakes": [
+              "Creating abstract classes only to hold constants.",
+              "Using inheritance simply to reuse a few utility methods.",
+              "Creating interfaces with only one implementation without any future extensibility."
+            ],
+            "followUpQuestions": [
+              "Can an abstract class implement an interface?",
+              "Can an interface extend another interface?",
+              "Can an abstract class have abstract and concrete methods?"
+            ],
+            "interviewerTips": [
+              "Interviewers are looking for design reasoning rather than language syntax.",
+              "Always explain your decision using a production example."
+            ],
+            "keyTakeaway": "Interfaces define capabilities. Abstract classes share implementation. Choose based on design intent, not language features."
+          }
         },
         {
           "question": "How do object-oriented languages differ from object-based ones?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Object-oriented languages support all four OOP principles: Encapsulation, Inheritance, Polymorphism and Abstraction. Object-based languages support objects and encapsulation but do not provide full inheritance and runtime polymorphism. Java is a fully object-oriented language, whereas JavaScript was originally considered object-based because it used prototype-based inheritance instead of class-based inheritance.",
+            "scenario": "In enterprise backend development this distinction rarely affects day-to-day work because Java provides all OOP features. However, when working with Angular or JavaScript on the frontend, understanding prototype inheritance helps explain why JavaScript behaves differently from Java.",
+            "deepDive": "The defining feature separating object-oriented from object-based languages is inheritance and polymorphism. Object-based languages may support objects and methods but lack a formal inheritance hierarchy.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Java\nclass Vehicle {}\nclass Car extends Vehicle {}\n\nVehicle vehicle = new Car();"
+            },
+            "performance": "There is no direct performance implication. This is primarily a language design concept.",
+            "bestPractices": [
+              "Focus on object-oriented design principles rather than memorizing definitions.",
+              "Understand how Java differs from JavaScript when working full-stack."
+            ],
+            "commonMistakes": [
+              "Saying JavaScript has classical inheritance like Java.",
+              "Thinking object creation alone makes a language object-oriented."
+            ],
+            "followUpQuestions": [
+              "Is JavaScript object-oriented?",
+              "What is prototype inheritance?"
+            ],
+            "interviewerTips": [
+              "Most interviewers ask this to verify your understanding of OOP concepts rather than expecting language history."
+            ],
+            "keyTakeaway": "Object-oriented languages support inheritance and polymorphism; object-based languages generally do not."
+          }
         },
         {
           "question": "What types of inheritance does Java support, and why doesn’t it support multiple inheritance with classes?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Java supports Single, Multilevel and Hierarchical inheritance using classes. Multiple inheritance is supported only through interfaces. Java intentionally avoids multiple inheritance with classes because it introduces ambiguity, commonly known as the Diamond Problem.",
+            "scenario": "In our microservices, service implementations typically extend a single base class for shared functionality while implementing multiple interfaces like Auditable, Retryable and Cacheable. This gives us the flexibility of multiple inheritance without the ambiguity of inheriting implementation from multiple classes.",
+            "deepDive": "Suppose both ParentA and ParentB provide the same implementation of a method. If Child extends both classes, the JVM cannot determine which implementation should execute. Java eliminates this ambiguity by allowing only single class inheritance. Interfaces solve this because they primarily define contracts, and Java requires explicit resolution if multiple default methods conflict.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Animal {}\n\nclass Dog extends Animal {}\n\ninterface Flyable {}\ninterface Swimmable {}\n\nclass Duck extends Animal implements Flyable, Swimmable {\n\n}"
+            },
+            "performance": "Single inheritance keeps the object model simpler and method resolution faster and more predictable.",
+            "bestPractices": [
+              "Use interfaces to combine multiple capabilities.",
+              "Keep inheritance hierarchies shallow.",
+              "Prefer composition for behavior reuse."
+            ],
+            "commonMistakes": [
+              "Thinking Java completely lacks multiple inheritance.",
+              "Creating deep inheritance trees that become difficult to maintain."
+            ],
+            "followUpQuestions": [
+              "What is the Diamond Problem?",
+              "How are conflicting default methods resolved?",
+              "Why does Java allow multiple interface inheritance?"
+            ],
+            "interviewerTips": [
+              "Draw the diamond diagram if asked on a whiteboard interview."
+            ],
+            "keyTakeaway": "Java avoids multiple implementation inheritance to eliminate ambiguity while supporting multiple interface inheritance for flexibility."
+          }
+        },
+        {
+          "question": "Why doesn’t Java support multiple inheritance with classes? Explain the Diamond Problem.",
+          "answer": {
+            "interviewAnswer": "The primary reason is ambiguity. If two parent classes provide the same method implementation and a child inherits both, the compiler cannot determine which implementation should execute. This is called the Diamond Problem. Java avoids the problem entirely by allowing only one parent class while permitting multiple interfaces.",
+            "scenario": "Imagine two framework libraries both exposing a BaseService class containing an initialize() method. If our service inherited both, every call to initialize() would become ambiguous. Java forces developers to choose a single inheritance hierarchy and compose other functionality through interfaces or delegation.",
+            "deepDive": "When default methods were introduced in Java 8, interfaces could also provide implementations. Java solved this by requiring the child class to explicitly override the conflicting method whenever two interfaces provide the same default implementation. This removes ambiguity at compile time.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface A {\n    default void show() {\n        System.out.println(\"A\");\n    }\n}\n\ninterface B {\n    default void show() {\n        System.out.println(\"B\");\n    }\n}\n\nclass Demo implements A, B {\n\n    @Override\n    public void show() {\n        A.super.show();\n    }\n}"
+            },
+            "performance": "Avoiding multiple implementation inheritance simplifies method lookup and keeps the JVM object model less complex.",
+            "bestPractices": [
+              "Prefer composition over inheritance.",
+              "Keep inheritance only where there is a true 'is-a' relationship.",
+              "Resolve interface default method conflicts explicitly."
+            ],
+            "commonMistakes": [
+              "Saying Java doesn't support multiple inheritance at all.",
+              "Using inheritance for code reuse instead of proper object modeling."
+            ],
+            "followUpQuestions": [
+              "How are conflicting default methods resolved?",
+              "Why is composition generally preferred today?",
+              "What design principle encourages composition?"
+            ],
+            "interviewerTips": [
+              "Mention both the Diamond Problem and Java 8 default method resolution to demonstrate deeper knowledge."
+            ],
+            "keyTakeaway": "Java avoids multiple class inheritance to eliminate ambiguity while using interfaces to provide multiple capabilities safely."
+          }
         },
         {
           "question": "When would you prefer composition over inheritance in real systems?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "In modern enterprise applications, I almost always prefer composition over inheritance unless there is a true 'is-a' relationship. Composition provides better flexibility, loose coupling, and easier testing. Inheritance tightly couples child classes to parent implementations, so even small changes in the parent can unintentionally impact all subclasses. Composition follows the 'has-a' relationship and aligns well with the SOLID principles, especially the Open-Closed and Dependency Inversion Principles.",
+            "scenario": "In one of our procurement microservices, every external system required retry logic, logging, caching, authentication, and metrics. Instead of creating a deep inheritance hierarchy like BaseConnector → RetryConnector → CachedConnector → LoggedConnector, we injected independent components such as RetryService, CacheService, AuditService, and MetricsService. This allowed each connector to reuse only the required functionality while remaining loosely coupled and independently testable.",
+            "deepDive": "Inheritance creates compile-time coupling because subclasses depend on the parent's implementation. Composition delegates responsibilities to collaborating objects at runtime. Frameworks like Spring Boot heavily encourage composition through Dependency Injection, where services are composed using interfaces rather than inheritance. This makes applications easier to extend, mock during testing, and maintain over time.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class PaymentService {\n\n    private final NotificationService notificationService;\n    private final AuditService auditService;\n\n    public PaymentService(NotificationService notificationService,\n                          AuditService auditService) {\n        this.notificationService = notificationService;\n        this.auditService = auditService;\n    }\n\n    public void process(Order order) {\n        // Business Logic\n        auditService.log(order);\n        notificationService.send(order);\n    }\n}"
+            },
+            "performance": "Composition introduces one additional method delegation, but modern JVMs aggressively inline small methods through JIT optimization. The maintainability benefits significantly outweigh the negligible runtime overhead.",
+            "bestPractices": [
+              "Use inheritance only for genuine 'is-a' relationships.",
+              "Favor Dependency Injection over extending utility classes.",
+              "Keep reusable functionality as independent services.",
+              "Design classes around composition instead of deep inheritance trees."
+            ],
+            "commonMistakes": [
+              "Using inheritance only for code reuse.",
+              "Creating inheritance hierarchies 4-5 levels deep.",
+              "Violating the Liskov Substitution Principle."
+            ],
+            "followUpQuestions": [
+              "What is the Liskov Substitution Principle?",
+              "Why does Spring Boot prefer composition?",
+              "Can composition completely replace inheritance?"
+            ],
+            "interviewerTips": [
+              "This is one of the favorite design questions in product companies. Always explain using Spring Dependency Injection."
+            ],
+            "keyTakeaway": "Inheritance models relationships. Composition builds flexible systems. Modern Java applications overwhelmingly favor composition."
+          }
         },
         {
           "question": "How do access modifiers impact API design in large applications?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Access modifiers are essential for enforcing encapsulation and defining clear module boundaries. In enterprise applications, I expose only the minimum required API and keep implementation details hidden. This reduces coupling, prevents misuse, and makes future refactoring much easier.",
+            "scenario": "In our procurement platform, controller classes exposed only public REST endpoints. Service helper methods were private, internal utility classes were package-private, and reusable framework components were protected where inheritance was intended. This ensured that only intended APIs were accessible to other modules while preventing accidental usage of internal implementation details.",
+            "deepDive": "Java provides four access levels. Private restricts access within the class, default (package-private) restricts access within the package, protected allows subclasses and package access, and public exposes the API globally. Carefully selecting access levels reduces the public surface area of the application and improves maintainability.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class OrderService {\n\n    public Order createOrder(OrderRequest request) {\n        validate(request);\n        return save(request);\n    }\n\n    private void validate(OrderRequest request) {\n        // validation logic\n    }\n\n    private Order save(OrderRequest request) {\n        return new Order();\n    }\n}"
+            },
+            "performance": "Access modifiers have virtually no runtime performance impact. Their primary purpose is improving code quality, security, and maintainability.",
+            "bestPractices": [
+              "Expose the smallest possible public API.",
+              "Keep helper methods private.",
+              "Avoid making fields public.",
+              "Use package-private for internal implementations."
+            ],
+            "commonMistakes": [
+              "Making everything public.",
+              "Exposing mutable state directly.",
+              "Using protected without a genuine inheritance requirement."
+            ],
+            "followUpQuestions": [
+              "Can a top-level class be private?",
+              "What is package-private access?",
+              "Why are getters preferred over public fields?"
+            ],
+            "interviewerTips": [
+              "Interviewers usually expect you to relate access modifiers to encapsulation and API design rather than memorizing definitions."
+            ],
+            "keyTakeaway": "A smaller public API results in lower coupling, better encapsulation, and easier long-term maintenance."
+          }
         },
         {
           "question": "Where have you used static in your project, and what problems can it create?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "I use static only for stateless utilities, constants, factory methods, and shared configuration that doesn't depend on object state. I avoid using static for business logic because it introduces global state, makes testing difficult, and conflicts with Dependency Injection frameworks like Spring.",
+            "scenario": "In our microservices, we used static constants for Kafka topic names, HTTP header names, API versions, and application-wide utility methods such as JWT parsing and date conversions. Business services themselves were never static because Spring manages them as singleton beans through Dependency Injection.",
+            "deepDive": "Static members belong to the class rather than an object. They are initialized once during class loading and stored in JVM Metaspace. Since static methods don't have access to instance state, they cannot directly access non-static fields. Excessive use of static creates hidden dependencies and reduces testability.",
+            "codeExample": {
+              "language": "java",
+              "code": "public final class Constants {\n\n    public static final String ORDER_CREATED = \"ORDER_CREATED\";\n\n    private Constants() {}\n}\n\npublic class DateUtil {\n\n    public static LocalDate today() {\n        return LocalDate.now();\n    }\n}"
+            },
+            "performance": "Static methods avoid object creation and can be slightly faster because they don't require virtual dispatch. However, this optimization is insignificant compared to good application design.",
+            "bestPractices": [
+              "Use static for constants.",
+              "Keep utility classes stateless.",
+              "Avoid static mutable variables.",
+              "Prefer Dependency Injection for business services."
+            ],
+            "commonMistakes": [
+              "Using static to share mutable state.",
+              "Making service classes static.",
+              "Treating static as a replacement for singleton beans."
+            ],
+            "followUpQuestions": [
+              "Can static methods be overridden?",
+              "Where are static variables stored?",
+              "Why does Spring avoid static beans?"
+            ],
+            "interviewerTips": [
+              "Explain why excessive static usage hurts testing and dependency injection."
+            ],
+            "keyTakeaway": "Static is suitable for shared, stateless functionality—not for business logic or application state."
+          }
         },
         {
-          "question": "What’s the difference between static block and static method in real execution?",
-          "answer": ""
+          "question": "What's the difference between static block and static method in real execution?",
+          "answer": {
+            "interviewAnswer": "A static block executes automatically once when the class is loaded by the JVM, whereas a static method executes only when explicitly called. Static blocks are primarily used for complex class initialization, while static methods provide reusable utility behavior.",
+            "scenario": "In older enterprise applications, static blocks were sometimes used to load native libraries or initialize expensive configuration. In modern Spring Boot applications, we rarely use static blocks because initialization is handled through the Spring lifecycle using @PostConstruct, @Configuration, and bean initialization.",
+            "deepDive": "During class loading, the JVM executes static variable initialization followed by static blocks in the order they appear. This occurs only once regardless of how many objects are created. Static methods are stored as class methods and invoked only when explicitly called.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class Config {\n\n    static {\n        System.out.println(\"Static block executed\");\n    }\n\n    public static void print() {\n        System.out.println(\"Static method called\");\n    }\n}"
+            },
+            "performance": "Static blocks execute only once, making them efficient for one-time initialization. However, heavy initialization inside static blocks can increase application startup time.",
+            "bestPractices": [
+              "Keep static blocks lightweight.",
+              "Prefer Spring lifecycle methods in Spring Boot applications.",
+              "Use static methods only for stateless operations."
+            ],
+            "commonMistakes": [
+              "Performing database connections inside static blocks.",
+              "Putting business logic in static initialization.",
+              "Ignoring initialization order."
+            ],
+            "followUpQuestions": [
+              "When exactly does a class get loaded?",
+              "Can a class have multiple static blocks?",
+              "In what order are static variables and blocks initialized?"
+            ],
+            "interviewerTips": [
+              "Mention that modern Spring applications rarely require static blocks because the framework manages initialization."
+            ],
+            "keyTakeaway": "Static blocks perform one-time class initialization; static methods provide reusable class-level behavior."
+          }
         },
         {
-          "question": "Why can’t we access instance variables from a static context?",
-          "answer": ""
+          "question": "Why can't we access instance variables from a static context?",
+          "answer": {
+            "interviewAnswer": "A static context belongs to the class, whereas instance variables belong to individual objects. Since a static method can execute even before any object is created, the JVM has no instance to associate with instance variables. Therefore, accessing instance members directly from a static context is not allowed. To access them, we must first create or obtain an object reference.",
+            "scenario": "In our Spring Boot applications, the main() method is static because the JVM needs an entry point before creating any objects. From the main() method, we bootstrap the Spring container, which then creates singleton beans like OrderService or ContractService. Only after these objects are created can we access their instance variables and methods.",
+            "deepDive": "Static members are stored at the class level in JVM Metaspace, while instance fields reside inside objects on the Heap. During compilation, the compiler detects that a static method has no implicit 'this' reference. Since instance variables are accessed through 'this', attempting to use them directly results in a compile-time error.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class Employee {\n\n    private String name;\n\n    public static void printName() {\n        // System.out.println(name); // Compile-time error\n\n        Employee emp = new Employee();\n        emp.name = \"John\";\n        System.out.println(emp.name);\n    }\n}"
+            },
+            "performance": "This is a language design rule rather than a performance concern. Separating class-level and object-level members simplifies JVM memory management.",
+            "bestPractices": [
+              "Avoid making everything static just to access it globally.",
+              "Use Dependency Injection instead of static references.",
+              "Keep business logic inside instance methods."
+            ],
+            "commonMistakes": [
+              "Trying to access instance variables inside static utility methods.",
+              "Making variables static unnecessarily.",
+              "Using static as a replacement for object-oriented design."
+            ],
+            "followUpQuestions": [
+              "Can a static method access another static method?",
+              "Can an instance method access static variables?",
+              "What is the 'this' keyword internally?"
+            ],
+            "interviewerTips": [
+              "Mention that static methods do not have a 'this' reference. This usually impresses interviewers."
+            ],
+            "keyTakeaway": "Static methods belong to the class, so they have no object ('this') to access instance members."
+          }
         },
         {
           "question": "Is calling static methods using object reference a good practice? Why?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Although Java allows calling a static method using an object reference, it is considered poor coding practice. Static methods belong to the class, not the object. Calling them through an object creates the false impression that the method participates in polymorphism, which it does not.",
+            "scenario": "During a code review in one of our projects, we found utility methods being invoked through service objects instead of the utility class. We changed them to use the class name because it improved readability and made it clear that these methods were independent of object state.",
+            "deepDive": "The compiler resolves static method calls at compile time. Even if we write object.staticMethod(), the compiler converts it internally to ClassName.staticMethod(). There is no runtime dispatch involved.",
+            "codeExample": {
+              "language": "java",
+              "code": "class MathUtil {\n    static void print() {\n        System.out.println(\"Hello\");\n    }\n}\n\nMathUtil util = new MathUtil();\nutil.print();          // Allowed but not recommended\nMathUtil.print();      // Recommended"
+            },
+            "performance": "Both forms generate almost identical bytecode, so there is no performance difference. The concern is readability and maintainability.",
+            "bestPractices": [
+              "Always call static methods using the class name.",
+              "Reserve object references for instance methods."
+            ],
+            "commonMistakes": [
+              "Thinking static methods are overridden.",
+              "Calling static methods through objects."
+            ],
+            "followUpQuestions": [
+              "Can static methods be overridden?",
+              "Why is static method hiding different from overriding?"
+            ],
+            "interviewerTips": [
+              "Mention compile-time resolution to distinguish static methods from runtime polymorphism."
+            ],
+            "keyTakeaway": "Call static methods using the class name because they belong to the class, not the object."
+          }
         },
         {
           "question": "Can a class be private in Java? Where is it actually used?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "A top-level class cannot be private because it must be visible to the JVM and other classes. However, nested classes can be private. Private nested classes are commonly used to hide implementation details that should never be accessed outside the enclosing class.",
+            "scenario": "In one of our utility libraries, we used a private static helper class to encapsulate parsing logic. External modules interacted only with the public API, while the internal parsing implementation remained completely hidden.",
+            "deepDive": "Top-level classes can only be public or package-private. Nested classes, however, are members of another class, so they can use all access modifiers including private.",
+            "codeExample": {
+              "language": "java",
+              "code": "public class Parser {\n\n    private static class Token {\n        String value;\n    }\n}"
+            },
+            "performance": "No runtime performance difference. The benefit is stronger encapsulation and cleaner APIs.",
+            "bestPractices": [
+              "Hide implementation details using private nested classes.",
+              "Expose only necessary APIs."
+            ],
+            "commonMistakes": [
+              "Saying top-level classes can be private.",
+              "Exposing helper classes publicly."
+            ],
+            "followUpQuestions": [
+              "Can an interface be private?",
+              "Can an enum be private?"
+            ],
+            "interviewerTips": [
+              "Interviewers usually expect the distinction between top-level and nested classes."
+            ],
+            "keyTakeaway": "Only nested classes can be private; top-level classes cannot."
+          }
         },
         {
           "question": "What defines the state of an object in a real application?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "The state of an object is defined by the values stored in its instance variables at a particular point in time. Two objects of the same class can have completely different states while sharing the same behavior.",
+            "scenario": "In our procurement platform, every Contract object had the same methods like approve() and reject(), but each contract maintained its own state such as contractId, supplierId, status, approvalLevel, and expiryDate. Business decisions depended entirely on the current object state.",
+            "deepDive": "An object's identity comes from its memory reference, its state comes from instance fields, and its behavior comes from methods. State changes throughout the object's lifecycle while behavior remains defined by the class.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Order {\n    private Long id;\n    private String status;\n    private double amount;\n}"
+            },
+            "performance": "Large object state increases heap usage and GC pressure. Designing lightweight domain objects improves memory efficiency.",
+            "bestPractices": [
+              "Keep object state consistent.",
+              "Protect state using encapsulation.",
+              "Prefer immutable objects whenever possible."
+            ],
+            "commonMistakes": [
+              "Confusing object state with object behavior.",
+              "Exposing mutable fields publicly."
+            ],
+            "followUpQuestions": [
+              "What is object identity?",
+              "What is immutable state?"
+            ],
+            "interviewerTips": [
+              "Always explain state, behavior, and identity together."
+            ],
+            "keyTakeaway": "State is the current data stored inside an object's instance variables."
+          }
         },
         {
           "question": "How would you design a class so that no one can extend it?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "The simplest approach is to declare the class as final. A final class cannot be inherited. This is commonly used for immutable classes, utility classes, and security-sensitive classes where behavior must never change through inheritance.",
+            "scenario": "In one of our projects, we created immutable JWT utility and encryption helper classes as final because allowing inheritance could introduce inconsistent or insecure behavior. Similarly, Java's String class is final to guarantee immutability and security.",
+            "deepDive": "The compiler prevents any class from extending a final class. This guarantees that methods cannot be overridden and object behavior remains consistent. JVM optimizations such as method inlining are also easier for final methods and classes.",
+            "codeExample": {
+              "language": "java",
+              "code": "public final class JwtUtil {\n\n    public static String generateToken() {\n        return \"token\";\n    }\n}"
+            },
+            "performance": "Final methods are good candidates for JIT inlining, although design correctness should always take precedence over micro-optimizations.",
+            "bestPractices": [
+              "Use final for immutable classes.",
+              "Prevent inheritance only when it makes sense.",
+              "Document why the class is final."
+            ],
+            "commonMistakes": [
+              "Making every class final.",
+              "Using inheritance where composition is more appropriate."
+            ],
+            "followUpQuestions": [
+              "Why is String final?",
+              "Can a final class implement interfaces?",
+              "Can Spring create proxies for final classes?"
+            ],
+            "interviewerTips": [
+              "Mention String, LocalDate, and Optional as examples of final classes."
+            ],
+            "keyTakeaway": "Use the final keyword to prevent inheritance and preserve object behavior."
+          }
+        },
+        {
+          "question": "What are SOLID principles? Why do they matter in real-world applications?",
+          "answer": {
+            "interviewAnswer": "SOLID is a set of five object-oriented design principles introduced by Robert C. Martin (Uncle Bob). They help us build software that is maintainable, extensible, testable, and loosely coupled. In enterprise applications, requirements change frequently. If the code isn't designed using SOLID principles, even a small business change can impact multiple modules and introduce bugs. In my projects, SOLID has helped us build microservices where new features can be added with minimal changes to existing code.",
+            "scenario": "In one of our procurement services, initially all supplier-related operations like registration, validation, notifications, audit logging, and database operations were handled inside a single SupplierService class. As the application grew, every new feature required modifying the same class, increasing merge conflicts and regression bugs. We refactored the service following SOLID principles by separating validation, notification, repository, and audit into independent components. After refactoring, adding new business rules became much easier without impacting existing functionality.",
+            "deepDive": "SOLID is not about syntax; it's about reducing coupling and increasing cohesion. Each principle addresses a different design problem. Together they enable easier testing, dependency injection, scalability, and future extensibility. Frameworks like Spring Boot are heavily designed around SOLID principles, especially Dependency Inversion and Open-Closed Principle.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Poor Design\nclass OrderService {\n    void createOrder(){}\n    void sendEmail(){}\n    void generateInvoice(){}\n    void saveAuditLog(){}\n}\n\n// Better Design\nclass OrderService {}\nclass EmailService {}\nclass InvoiceService {}\nclass AuditService {}"
+            },
+            "performance": "SOLID itself doesn't improve execution speed. Instead, it improves long-term maintainability, testability, scalability, and developer productivity, which becomes critical in large enterprise systems.",
+            "bestPractices": [
+              "Design around interfaces instead of implementations.",
+              "Keep classes focused on one responsibility.",
+              "Use dependency injection instead of object creation.",
+              "Avoid tightly coupled classes."
+            ],
+            "commonMistakes": [
+              "Trying to apply every SOLID principle everywhere.",
+              "Creating unnecessary abstractions.",
+              "Over-engineering small applications."
+            ],
+            "followUpQuestions": [
+              "Which SOLID principle does Spring use the most?",
+              "Can you explain each SOLID principle?",
+              "Where have you implemented SOLID in your project?"
+            ],
+            "interviewerTips": [
+              "Interviewers expect practical examples rather than textbook definitions.",
+              "Always explain how SOLID improves maintainability."
+            ],
+            "keyTakeaway": "SOLID principles make software easier to extend, maintain, and test while reducing coupling between components."
+          }
+        },
+        {
+          "question": "Explain the Single Responsibility Principle (SRP) with a real project example.",
+          "answer": {
+            "interviewAnswer": "The Single Responsibility Principle states that a class should have only one reason to change. In other words, one class should focus on one business responsibility. When a class handles multiple responsibilities, it becomes difficult to maintain, test, and modify because changes in one responsibility may unintentionally affect others.",
+            "scenario": "Initially, our OrderService handled order validation, inventory checks, payment processing, email notifications, Kafka publishing, and audit logging. Every business enhancement required modifying the same class, making deployments risky. We refactored the application into OrderService, InventoryService, PaymentService, NotificationService, AuditService, and EventPublisher. Each component became independently testable, and feature development became significantly easier.",
+            "deepDive": "SRP increases cohesion while reducing coupling. A class should represent one business concept. If different teams own different business functions, they should ideally belong to separate classes or services. This aligns perfectly with microservice architecture where each service owns a single business capability.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Before\nclass OrderService {\n   void validate(){}\n   void processPayment(){}\n   void sendEmail(){}\n   void saveAudit(){}\n}\n\n// After\nclass OrderService {}\nclass PaymentService {}\nclass NotificationService {}\nclass AuditService {}"
+            },
+            "performance": "SRP has negligible runtime impact but significantly improves code maintainability, unit testing, and deployment flexibility.",
+            "bestPractices": [
+              "One business responsibility per class.",
+              "Move cross-cutting concerns like logging and notifications into separate services.",
+              "Keep business services focused."
+            ],
+            "commonMistakes": [
+              "Splitting classes too aggressively.",
+              "Creating utility classes containing unrelated methods.",
+              "Treating SRP as 'one method per class'."
+            ],
+            "followUpQuestions": [
+              "How does SRP help in microservices?",
+              "Can SRP increase the number of classes?",
+              "How do you identify multiple responsibilities?"
+            ],
+            "interviewerTips": [
+              "Use examples involving payment, notification, audit, or inventory because interviewers immediately relate to them."
+            ],
+            "keyTakeaway": "A class should change only for one business reason."
+          }
+        },
+        {
+          "question": "Explain the Open-Closed Principle (OCP) with a Spring Boot example.",
+          "answer": {
+            "interviewAnswer": "The Open-Closed Principle states that software entities should be open for extension but closed for modification. Instead of modifying existing business logic whenever a new requirement arrives, we should extend the system by adding new implementations. This minimizes regression risk and keeps existing code stable.",
+            "scenario": "Our notification module initially supported Email and SMS. Later, the business wanted Slack, Microsoft Teams, and Google Chat notifications. Because we designed the module around the NotificationService interface, we simply added new implementations without changing the business layer. The OrderService continued calling notificationService.send() exactly as before.",
+            "deepDive": "OCP is usually implemented using interfaces, abstract classes, dependency injection, and polymorphism. Spring Boot makes this extremely easy because new implementations can simply be registered as beans without changing existing services.",
+            "codeExample": {
+              "language": "java",
+              "code": "public interface NotificationService {\n    void send(Notification notification);\n}\n\nclass EmailNotificationService implements NotificationService {}\nclass SmsNotificationService implements NotificationService {}\nclass SlackNotificationService implements NotificationService {}\n\n@Service\npublic class OrderService {\n\n    private final NotificationService notificationService;\n\n    public OrderService(NotificationService notificationService){\n        this.notificationService = notificationService;\n    }\n}"
+            },
+            "performance": "The additional interface call has almost zero runtime cost because JVM JIT optimizes virtual method invocations aggressively.",
+            "bestPractices": [
+              "Design around abstractions.",
+              "Avoid switch-case statements that keep growing.",
+              "Use Strategy Pattern for extensibility.",
+              "Leverage Spring Dependency Injection."
+            ],
+            "commonMistakes": [
+              "Modifying existing code for every new business rule.",
+              "Using if-else chains instead of polymorphism.",
+              "Depending directly on concrete classes."
+            ],
+            "followUpQuestions": [
+              "How does Strategy Pattern implement OCP?",
+              "How does Spring support OCP?",
+              "Can enums violate OCP?"
+            ],
+            "interviewerTips": [
+              "Mention NotificationService, PaymentGateway, or AuthenticationProvider because these are classic OCP examples."
+            ],
+            "keyTakeaway": "New functionality should be added through extension, not by modifying stable business code."
+          }
+        },
+        {
+          "question": "Explain the Liskov Substitution Principle (LSP) with a production example.",
+          "answer": {
+            "interviewAnswer": "The Liskov Substitution Principle states that any subclass should be able to replace its parent class without changing the correctness of the application. In simple terms, child classes should honor the contract defined by the parent. If replacing a parent object with a child breaks business logic, LSP has been violated.",
+            "scenario": "We had a DocumentStorage interface implemented by S3Storage, AzureBlobStorage, and LocalStorage. The business layer interacted only with the interface. Since every implementation followed the same contract for upload(), download(), and delete(), we could switch storage providers using configuration without modifying business logic. This is a good example of LSP in production.",
+            "deepDive": "LSP is closely related to polymorphism. Child classes should not throw unexpected exceptions, remove functionality, strengthen preconditions, or weaken postconditions. Violating LSP often indicates incorrect inheritance and suggests composition may be a better design choice.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface StorageService {\n    void upload(File file);\n}\n\nclass S3Storage implements StorageService {\n    public void upload(File file) {}\n}\n\nclass AzureStorage implements StorageService {\n    public void upload(File file) {}\n}"
+            },
+            "performance": "LSP has no measurable runtime cost. Its value lies in enabling safe polymorphism and preventing runtime surprises.",
+            "bestPractices": [
+              "Only inherit when there is a genuine IS-A relationship.",
+              "Keep subclass behavior consistent.",
+              "Prefer composition if behavior differs significantly."
+            ],
+            "commonMistakes": [
+              "Throwing UnsupportedOperationException from child classes.",
+              "Changing parent method behavior completely.",
+              "Using inheritance only for code reuse."
+            ],
+            "followUpQuestions": [
+              "Give an example where LSP is violated.",
+              "How does composition solve LSP violations?",
+              "How is LSP related to polymorphism?"
+            ],
+            "interviewerTips": [
+              "A very common example is Bird → Penguin. Avoid it in senior interviews. Use Storage, Payment, Notification, Authentication, or Shipping providers instead."
+            ],
+            "keyTakeaway": "If replacing a parent object with its child breaks the application, the inheritance hierarchy is poorly designed and violates LSP."
+          }
+        },
+        {
+          "question": "Explain the Interface Segregation Principle (ISP) with a real-world example.",
+          "answer": {
+            "interviewAnswer": "The Interface Segregation Principle states that clients should not be forced to depend on methods they don't use. Instead of creating one large interface containing unrelated operations, we should create multiple smaller, focused interfaces. This keeps implementations clean, reduces unnecessary dependencies, and makes the code easier to maintain and test.",
+            "scenario": "In our procurement platform, we initially had a SupplierService interface containing methods like registerSupplier(), approveSupplier(), uploadDocuments(), generateReports(), sendNotifications(), and syncWithERP(). Different services implemented this interface but most of them only needed a subset of these methods. Some implementations contained empty methods or threw UnsupportedOperationException. We refactored it into SupplierRegistrationService, SupplierApprovalService, DocumentService, NotificationService, and ERPIntegrationService. Each service implemented only the contract it actually required.",
+            "deepDive": "Large interfaces violate cohesion. When an interface grows too large, every implementation becomes tightly coupled to methods it doesn't require. ISP encourages high cohesion by grouping related behaviors together. Spring Data JPA follows ISP beautifully. JpaRepository extends smaller interfaces like CrudRepository and PagingAndSortingRepository instead of exposing one giant interface.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Bad Design\ninterface Worker {\n    void work();\n    void eat();\n    void sleep();\n}\n\n// Better Design\ninterface Workable {\n    void work();\n}\n\ninterface Eatable {\n    void eat();\n}\n\ninterface Sleepable {\n    void sleep();\n}\n\nclass Employee implements Workable, Eatable, Sleepable {\n    public void work() {}\n    public void eat() {}\n    public void sleep() {}\n}"
+            },
+            "performance": "ISP doesn't directly improve runtime performance, but it reduces unnecessary dependencies, improves maintainability, and minimizes ripple effects when interfaces evolve.",
+            "bestPractices": [
+              "Keep interfaces focused on one responsibility.",
+              "Avoid 'God Interfaces'.",
+              "Split interfaces based on business capabilities.",
+              "Prefer multiple focused interfaces over one large interface."
+            ],
+            "commonMistakes": [
+              "Adding unrelated methods to existing interfaces.",
+              "Returning UnsupportedOperationException from implementations.",
+              "Creating interfaces with dozens of methods."
+            ],
+            "followUpQuestions": [
+              "How does ISP differ from SRP?",
+              "Does Spring Data JPA follow ISP?",
+              "Can too many interfaces become a problem?"
+            ],
+            "interviewerTips": [
+              "Explain ISP using repository or payment interfaces instead of textbook printer examples."
+            ],
+            "keyTakeaway": "Clients should only depend on the methods they actually need."
+          }
+        },
+        {
+          "question": "Explain the Dependency Inversion Principle (DIP) with a Spring Boot example.",
+          "answer": {
+            "interviewAnswer": "Dependency Inversion Principle states that high-level modules should not depend on low-level modules. Both should depend on abstractions. In Spring Boot, this is achieved naturally through Dependency Injection. Instead of directly creating dependent objects using the new keyword, we depend on interfaces, allowing implementations to be swapped without changing business logic.",
+            "scenario": "Our OrderService depended on a PaymentGateway interface rather than StripePaymentGateway or RazorpayPaymentGateway directly. During testing we injected a MockPaymentGateway. Later, when business introduced another payment provider, we simply created a new implementation without modifying OrderService.",
+            "deepDive": "Without DIP, classes create their own dependencies, resulting in tight coupling. With Spring's IoC Container, object creation and dependency management are handled by the framework. Business classes focus only on business logic while the container injects the required implementations. This is one of the biggest reasons Spring applications remain extensible and testable.",
+            "codeExample": {
+              "language": "java",
+              "code": "public interface PaymentGateway {\n    void pay(Order order);\n}\n\n@Service\nclass StripePaymentGateway implements PaymentGateway {\n    public void pay(Order order) {}\n}\n\n@Service\nclass OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n\n    public void placeOrder(Order order) {\n        paymentGateway.pay(order);\n    }\n}"
+            },
+            "performance": "Dependency Injection introduces negligible startup overhead while greatly improving modularity, unit testing, and extensibility.",
+            "bestPractices": [
+              "Prefer constructor injection.",
+              "Depend on interfaces instead of implementations.",
+              "Avoid object creation using new inside business services.",
+              "Use IoC containers to manage dependencies."
+            ],
+            "commonMistakes": [
+              "Using field injection everywhere.",
+              "Instantiating dependencies manually.",
+              "Depending directly on concrete implementations."
+            ],
+            "followUpQuestions": [
+              "Why is constructor injection preferred?",
+              "How does Spring IoC implement DIP?",
+              "Difference between Dependency Injection and Dependency Inversion?"
+            ],
+            "interviewerTips": [
+              "Mention that Dependency Injection is the implementation mechanism, while Dependency Inversion is the design principle."
+            ],
+            "keyTakeaway": "Depend on abstractions, not concrete implementations."
+          }
+        },
+        {
+          "question": "Where have you applied SOLID principles in your project?",
+          "answer": {
+            "interviewAnswer": "In our Spring Boot microservices, SOLID principles were part of the overall architecture rather than something implemented in isolation. Service contracts were defined using interfaces, business responsibilities were separated into dedicated services, infrastructure concerns like notifications and auditing were isolated, and Spring Dependency Injection ensured loose coupling. This made our services easier to extend, test, and maintain as business requirements evolved.",
+            "scenario": "For example, our procurement workflow involved supplier onboarding, contract approval, notifications, audit logging, and ERP synchronization. Instead of placing everything inside one service, we created SupplierService, ContractService, NotificationService, AuditService, ERPIntegrationService, and EventPublisher. When Slack notifications were introduced, only NotificationService received a new implementation. None of the business services required modification.",
+            "deepDive": "SRP was applied by separating responsibilities. OCP was achieved through interfaces and strategy implementations. LSP ensured interchangeable service implementations. ISP kept service contracts focused. DIP was implemented through Spring's constructor injection and IoC container.",
+            "codeExample": {
+              "language": "java",
+              "code": "OrderService\n   |\n   +-- PaymentGateway\n   +-- NotificationService\n   +-- AuditService\n   +-- InventoryService\n\nEach dependency is injected through interfaces."
+            },
+            "performance": "The architecture introduces minimal abstraction overhead while significantly improving scalability, parallel development, automated testing, and long-term maintainability.",
+            "bestPractices": [
+              "Design around business capabilities.",
+              "Use interfaces for external contracts.",
+              "Separate infrastructure from business logic.",
+              "Keep services independently testable."
+            ],
+            "commonMistakes": [
+              "Mentioning SOLID without real examples.",
+              "Confusing Dependency Injection with Dependency Inversion.",
+              "Applying abstractions where they are unnecessary."
+            ],
+            "followUpQuestions": [
+              "Which SOLID principle do you use most frequently?",
+              "Have you ever violated SOLID intentionally?",
+              "How does SOLID help microservices?"
+            ],
+            "interviewerTips": [
+              "Interviewers prefer hearing one real production example over five textbook definitions."
+            ],
+            "keyTakeaway": "SOLID is most valuable when applied across the architecture rather than individual classes."
+          }
+        },
+        {
+          "question": "Which SOLID principles does Spring Boot use internally?",
+          "answer": {
+            "interviewAnswer": "Spring Boot heavily embraces all five SOLID principles, but the most prominent ones are Dependency Inversion and Open-Closed Principle. The IoC container manages dependencies through abstractions, while auto-configuration and bean implementations allow applications to be extended without modifying framework code.",
+            "scenario": "In our project, we never instantiated services manually. Controllers depended on service interfaces, services depended on repository interfaces, and implementations were injected by Spring. When introducing a Redis cache implementation, we simply registered another bean without changing existing business logic.",
+            "deepDive": "Dependency Inversion is implemented through IoC and Dependency Injection. Open-Closed Principle is supported by polymorphism and bean replacement. Interface Segregation appears in Spring Data repositories. Single Responsibility is visible throughout the framework where each component has a focused responsibility. Liskov Substitution allows beans to be replaced transparently through interfaces.",
+            "codeExample": {
+              "language": "java",
+              "code": "@RestController\nclass OrderController {\n\n    private final OrderService orderService;\n\n    OrderController(OrderService orderService) {\n        this.orderService = orderService;\n    }\n}"
+            },
+            "performance": "Although Spring performs dependency resolution during startup, the runtime cost is negligible. The resulting loose coupling and modularity provide significant long-term benefits.",
+            "bestPractices": [
+              "Prefer constructor injection.",
+              "Expose services through interfaces.",
+              "Keep beans focused on one responsibility.",
+              "Use Spring's extension points instead of modifying framework code."
+            ],
+            "commonMistakes": [
+              "Using field injection everywhere.",
+              "Bypassing Spring and creating objects manually.",
+              "Making business services static."
+            ],
+            "followUpQuestions": [
+              "How does Spring IoC work internally?",
+              "How are beans created?",
+              "How does @Autowired resolve dependencies?"
+            ],
+            "interviewerTips": [
+              "This is a favorite question for Spring Boot interviews. Relate each SOLID principle to a Spring feature."
+            ],
+            "keyTakeaway": "Spring Boot is one of the best real-world examples of SOLID principles in practice, especially Dependency Inversion and Open-Closed Principle."
+          }
+        },
+        {
+          "question": "Why is every class inherited from Object in Java?",
+          "answer": {
+            "interviewAnswer": "In Java, every class implicitly extends the Object class if it doesn't explicitly extend another class. Object is the root of the Java class hierarchy and provides common behavior that every object should have, such as equality comparison, string representation, runtime type information, hashing, cloning, and synchronization support. This allows the JVM and Java APIs to treat every object uniformly.",
+            "scenario": "In one of our Spring Boot microservices, we stored different types of domain objects like Order, Supplier, and Contract inside generic collections such as List<Object> during audit processing. Since every class extends Object, the framework could treat all these objects uniformly and later use methods like toString(), getClass(), and hashCode() without knowing their actual type.",
+            "deepDive": "When the Java compiler encounters a class without an explicit parent, it automatically inserts 'extends Object'. Therefore, methods like equals(), hashCode(), toString(), wait(), notify(), and getClass() become available to every Java object. This design enables polymorphism and allows frameworks such as Spring, Hibernate, and Jackson to operate on generic Object references.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Employee {\n}\n\n// Compiler internally converts it to\nclass Employee extends Object {\n}\n\nEmployee emp = new Employee();\nSystem.out.println(emp.toString());\nSystem.out.println(emp.getClass());"
+            },
+            "performance": "The inheritance from Object has negligible overhead because every Java object already contains JVM metadata required for runtime operations such as synchronization and class identification.",
+            "bestPractices": [
+              "Override Object methods only when necessary.",
+              "Understand which Object methods are inherited automatically.",
+              "Always override equals() and hashCode() together."
+            ],
+            "commonMistakes": [
+              "Thinking classes must explicitly extend Object.",
+              "Ignoring inherited methods provided by Object.",
+              "Assuming Object methods are optional."
+            ],
+            "followUpQuestions": [
+              "How many methods does Object class contain?",
+              "Which Object methods are final?",
+              "Can Object be instantiated?"
+            ],
+            "interviewerTips": [
+              "Mention that Object enables frameworks to treat every Java object uniformly."
+            ],
+            "keyTakeaway": "Object is the root of the Java class hierarchy, providing common functionality to every Java object."
+          }
+        },
+        {
+          "question": "What is the difference between '==' and equals()?",
+          "answer": {
+            "interviewAnswer": "The '==' operator compares references for objects and values for primitive types, whereas equals() compares logical equality. By default, Object.equals() behaves like '==', but many classes such as String, Integer, LocalDate, and BigDecimal override equals() to compare object contents instead of memory addresses.",
+            "scenario": "In one production issue, duplicate supplier records were being created because developers compared supplier IDs using '==' instead of equals(). Since the IDs came from different String objects loaded from the database, reference comparison failed even though their contents were identical. Replacing '==' with equals() resolved the issue.",
+            "deepDive": "For primitive types, '==' compares actual values stored in memory. For objects, '==' compares whether two references point to the same heap object. equals() is a normal method that can be overridden to implement business-specific equality. Collections like HashSet and HashMap rely on equals(), not reference equality.",
+            "codeExample": {
+              "language": "java",
+              "code": "String s1 = new String(\"Java\");\nString s2 = new String(\"Java\");\n\nSystem.out.println(s1 == s2);       // false\nSystem.out.println(s1.equals(s2));  // true\n\nString s3 = \"Java\";\nString s4 = \"Java\";\n\nSystem.out.println(s3 == s4);       // true (String Pool)"
+            },
+            "performance": "'==' is a simple reference comparison and is extremely fast. equals() may perform field-by-field comparisons depending on the implementation. The small overhead is necessary for achieving correct business behavior.",
+            "bestPractices": [
+              "Use '==' only for primitives and enum comparisons.",
+              "Use equals() for business objects.",
+              "Prefer Objects.equals(a, b) when null values are possible."
+            ],
+            "commonMistakes": [
+              "Using '==' for String comparison.",
+              "Calling equals() on a null reference.",
+              "Assuming equals() always compares object contents."
+            ],
+            "followUpQuestions": [
+              "Why does String override equals()?",
+              "How does Objects.equals() prevent NullPointerException?",
+              "When is '==' correct for objects?"
+            ],
+            "interviewerTips": [
+              "Mention String Pool behavior because interviewers frequently ask about it."
+            ],
+            "keyTakeaway": "'==' compares references, while equals() compares logical equality."
+          }
+        },
+        {
+          "question": "What is the difference between object identity and object equality?",
+          "answer": {
+            "interviewAnswer": "Object identity means two references point to the exact same object in memory, whereas object equality means two different objects represent the same logical data. Identity is determined using '==', while equality is determined using equals().",
+            "scenario": "In our caching layer, Hibernate's first-level cache returned the same entity instance within a transaction, so '==' returned true because both references pointed to the same object. However, entities fetched in different sessions represented the same database row but were different Java objects. In that case equals() determined whether they represented the same business entity.",
+            "deepDive": "Identity is a JVM concept based on memory references. Equality is an application concept defined by business rules. For example, two Employee objects with the same employeeId should usually be considered equal even though they occupy different memory locations.",
+            "codeExample": {
+              "language": "java",
+              "code": "Employee e1 = new Employee(101, \"John\");\nEmployee e2 = new Employee(101, \"John\");\n\nSystem.out.println(e1 == e2);      // false\nSystem.out.println(e1.equals(e2)); // true (if equals overridden)\n\nEmployee e3 = e1;\nSystem.out.println(e1 == e3);      // true"
+            },
+            "performance": "Identity comparison is constant-time reference comparison. Equality comparison depends on the fields involved in equals() implementation.",
+            "bestPractices": [
+              "Define equality based on immutable business identifiers.",
+              "Override hashCode() whenever equals() is overridden.",
+              "Use identity only when object instance uniqueness matters."
+            ],
+            "commonMistakes": [
+              "Confusing identity with equality.",
+              "Comparing entities using '==' in JPA applications.",
+              "Using mutable fields in equals()."
+            ],
+            "followUpQuestions": [
+              "How does Hibernate handle entity equality?",
+              "Can two objects be equal but have different identities?",
+              "Can two references have the same identity but different equality?"
+            ],
+            "interviewerTips": [
+              "Use a JPA or Hibernate example instead of simple String examples for senior-level interviews."
+            ],
+            "keyTakeaway": "Identity refers to the same object instance, while equality refers to representing the same logical value."
+          }
+        },
+        {
+          "question": "How does equals() work internally? When should you override it?",
+          "answer": {
+            "interviewAnswer": "The default implementation of equals() in Object class simply compares object references, which is equivalent to using the == operator. We override equals() whenever business equality differs from object identity. For example, two Employee objects representing the same employee ID should be considered equal even if they are different objects in memory.",
+            "scenario": "In our procurement platform, Supplier entities were frequently loaded from different microservices. Although they were different Java objects, they represented the same supplier record. By overriding equals() based on supplierId, we ensured duplicate suppliers were not added to collections such as HashSet.",
+            "deepDive": "The default implementation in java.lang.Object is approximately:\n\npublic boolean equals(Object obj) {\n    return this == obj;\n}\n\nWhen overriding equals(), we typically compare immutable business identifiers or primary keys. A proper implementation should satisfy five properties:\n1. Reflexive\n2. Symmetric\n3. Transitive\n4. Consistent\n5. x.equals(null) must return false",
+            "codeExample": {
+              "language": "java",
+              "code": "@Override\npublic boolean equals(Object obj) {\n    if (this == obj)\n        return true;\n\n    if (obj == null || getClass() != obj.getClass())\n        return false;\n\n    Employee other = (Employee) obj;\n\n    return Objects.equals(employeeId, other.employeeId);\n}"
+            },
+            "performance": "equals() executes in O(1) when comparing a single identifier. Comparing many fields increases execution time, so equality should usually rely on immutable identifiers whenever possible.",
+            "bestPractices": [
+              "Use immutable business identifiers.",
+              "Use Objects.equals() for null safety.",
+              "Keep equals() fast.",
+              "Override hashCode() whenever equals() is overridden."
+            ],
+            "commonMistakes": [
+              "Using mutable fields in equals().",
+              "Forgetting instanceof or getClass() checks.",
+              "Violating symmetry or transitivity."
+            ],
+            "followUpQuestions": [
+              "What are the equals() contract rules?",
+              "Why use getClass() instead of instanceof?",
+              "Can equals() throw NullPointerException?"
+            ],
+            "interviewerTips": [
+              "Senior interviewers expect you to explain the contract, not just write the code."
+            ],
+            "keyTakeaway": "Override equals() whenever logical equality differs from object identity."
+          }
+        },
+        {
+          "question": "How does hashCode() work internally? Why is it important?",
+          "answer": {
+            "interviewAnswer": "hashCode() returns an integer hash value representing an object's state. Hash-based collections such as HashMap and HashSet use this hash value to determine the bucket where an object should be stored. Objects that are equal according to equals() must always return the same hashCode().",
+            "scenario": "Our application cached supplier metadata using HashMap. Initially, equals() was overridden but hashCode() wasn't. As a result, identical Supplier objects were stored in different buckets, causing cache misses and duplicate entries. After implementing hashCode() correctly, lookups became consistent.",
+            "deepDive": "Internally, HashMap first computes the hashCode(), applies a bit-spreading function, then calculates:\n\nbucketIndex = (table.length - 1) & hash\n\nOnly objects in that bucket are compared using equals(). This dramatically reduces lookup time from O(n) to approximately O(1).",
+            "codeExample": {
+              "language": "java",
+              "code": "@Override\npublic int hashCode() {\n    return Objects.hash(employeeId);\n}"
+            },
+            "performance": "A well-distributed hashCode() gives HashMap average O(1) lookup. Poor hash functions cause collisions, degrading performance toward O(n).",
+            "bestPractices": [
+              "Use immutable fields.",
+              "Keep hashCode() lightweight.",
+              "Ensure equal objects return identical hashes.",
+              "Use Objects.hash() unless performance is critical."
+            ],
+            "commonMistakes": [
+              "Returning random numbers.",
+              "Using mutable fields.",
+              "Overriding equals() without hashCode()."
+            ],
+            "followUpQuestions": [
+              "Can unequal objects have the same hashCode()?",
+              "What is a collision?",
+              "Does HashMap compare hashCode() only?"
+            ],
+            "interviewerTips": [
+              "Draw the HashMap bucket diagram while explaining."
+            ],
+            "keyTakeaway": "hashCode() determines the bucket; equals() identifies the exact object inside that bucket."
+          }
+        },
+        {
+          "question": "Why must equals() and hashCode() always be overridden together?",
+          "answer": {
+            "interviewAnswer": "Because Java collections rely on both methods together. hashCode() determines where an object is stored, while equals() verifies whether two objects are logically equal. Overriding only one breaks the collection contract and leads to incorrect behavior.",
+            "scenario": "During development, a HashSet contained duplicate Contract objects even though equals() returned true. The root cause was that hashCode() still came from Object, producing different bucket locations. Since the objects landed in different buckets, equals() was never called.",
+            "deepDive": "HashMap lookup works in two phases:\n1. Compute hashCode() to locate the bucket.\n2. Use equals() only among objects inside that bucket.\n\nIf equal objects have different hashes, they end up in different buckets and are treated as distinct objects.",
+            "codeExample": {
+              "language": "java",
+              "code": "Employee e1 = new Employee(101);\nEmployee e2 = new Employee(101);\n\nSystem.out.println(e1.equals(e2)); // true\n\nSet<Employee> set = new HashSet<>();\nset.add(e1);\nset.add(e2);\n\n// Duplicate entries if hashCode() isn't overridden."
+            },
+            "performance": "Incorrect implementations don't just produce bugs—they also reduce HashMap performance due to excessive collisions or duplicate storage.",
+            "bestPractices": [
+              "Always override both together.",
+              "Use the same fields in both methods.",
+              "Keep fields immutable."
+            ],
+            "commonMistakes": [
+              "Implementing only equals().",
+              "Using different fields in equals() and hashCode().",
+              "Changing fields after insertion into HashMap."
+            ],
+            "followUpQuestions": [
+              "What happens if hashCode() changes after insertion?",
+              "Why isn't equals() sufficient?",
+              "Can HashMap work without hashCode()?"
+            ],
+            "interviewerTips": [
+              "This is probably the most asked Java collections question. Explain it with bucket lookup."
+            ],
+            "keyTakeaway": "equals() and hashCode() form one contract. Breaking it breaks hash-based collections."
+          }
+        },
+        {
+          "question": "Explain how HashMap uses equals() and hashCode() internally with a real example.",
+          "answer": {
+            "interviewAnswer": "When we insert an object into a HashMap, Java first calls hashCode() to determine the bucket. If multiple entries exist in that bucket, HashMap calls equals() to identify the correct key. Therefore, hashCode() optimizes search, while equals() guarantees correctness.",
+            "scenario": "In our order-processing system, we cached Order objects by OrderId. During lookup, HashMap computed the hashCode() of the key to locate the bucket, then used equals() only among entries in that bucket. This allowed constant-time access even when the cache contained hundreds of thousands of records.",
+            "deepDive": "Insertion Flow:\n1. key.hashCode()\n2. Spread hash bits\n3. Calculate bucket index\n4. Bucket empty → Insert\n5. Bucket occupied → Compare hashCode()\n6. If hashes match → equals()\n7. Replace existing value or append node\n\nFrom Java 8 onward, buckets containing more than 8 entries are converted into Red-Black Trees, improving worst-case lookup from O(n) to O(log n).",
+            "codeExample": {
+              "language": "java",
+              "code": "Map<Employee, String> map = new HashMap<>();\n\nmap.put(new Employee(101), \"John\");\n\nString value = map.get(new Employee(101));\n\n// hashCode() -> bucket\n// equals() -> actual key"
+            },
+            "performance": "Average lookup is O(1). Heavy collisions lead to O(log n) in Java 8+ because buckets become Red-Black Trees.",
+            "bestPractices": [
+              "Implement robust hashCode().",
+              "Avoid mutable keys.",
+              "Use immutable identifiers.",
+              "Understand collision handling."
+            ],
+            "commonMistakes": [
+              "Thinking HashMap searches the entire table.",
+              "Ignoring bucket indexing.",
+              "Using mutable objects as keys."
+            ],
+            "followUpQuestions": [
+              "Why does HashMap treeify after 8 entries?",
+              "Why is capacity a power of two?",
+              "How are collisions resolved?"
+            ],
+            "interviewerTips": [
+              "If you can explain HashMap insertion step-by-step with hashCode() and equals(), you will stand out in senior Java interviews."
+            ],
+            "keyTakeaway": "HashMap first narrows the search using hashCode(), then guarantees correctness using equals()."
+          }
+        },
+        {
+          "question": "Why should we override toString()? Where have you used it in real projects?",
+          "answer": {
+            "interviewAnswer": "The default implementation of toString() returns the class name followed by the hexadecimal hash code, which is not useful for debugging or logging. We override it to provide a meaningful representation of an object's state. This makes logs, debugging, monitoring, and troubleshooting much easier in production systems.",
+            "scenario": "In one of our Spring Boot microservices, every API request and Kafka event was logged. Before overriding toString(), logs looked like 'Order@4e25154f', which provided no useful information. After overriding it, logs displayed Order{id=101, status='APPROVED', amount=2500.00}, allowing developers to identify issues immediately without attaching a debugger.",
+            "deepDive": "Whenever an object is passed to System.out.println(), StringBuilder.append(Object), or most logging frameworks like SLF4J, Java automatically invokes toString(). Frameworks such as Jackson usually serialize fields directly, but application logs frequently depend on toString().",
+            "codeExample": {
+              "language": "java",
+              "code": "@Override\npublic String toString() {\n    return \"Order{\" +\n           \"id=\" + id +\n           \", status='\" + status + '\\'' +\n           \", amount=\" + amount +\n           '}';\n}"
+            },
+            "performance": "Avoid building very large strings or exposing lazy-loaded JPA relationships inside toString(), as this may trigger unnecessary database queries and increase logging overhead.",
+            "bestPractices": [
+              "Include only meaningful business fields.",
+              "Avoid passwords, tokens, and sensitive data.",
+              "Exclude lazy-loaded collections in JPA entities.",
+              "Use Lombok @ToString carefully."
+            ],
+            "commonMistakes": [
+              "Logging sensitive information.",
+              "Including bidirectional relationships causing StackOverflowError.",
+              "Returning huge object graphs."
+            ],
+            "followUpQuestions": [
+              "Who calls toString() automatically?",
+              "Can toString() cause LazyInitializationException?",
+              "Does println() internally call toString()?"
+            ],
+            "interviewerTips": [
+              "Mention logging and debugging rather than just printing objects."
+            ],
+            "keyTakeaway": "A well-written toString() greatly improves observability and debugging in production applications."
+          }
+        },
+        {
+          "question": "How does clone() work? Why is it rarely used in enterprise applications?",
+          "answer": {
+            "interviewAnswer": "clone() creates a copy of an object. By default, Object.clone() performs a shallow copy, meaning primitive fields are copied directly while object references are copied as references. Because of its complexity and design limitations, most modern Java applications prefer copy constructors, builders, or serialization-based copying over clone().",
+            "scenario": "We needed to duplicate configuration objects before applying runtime modifications so that the original configuration remained unchanged. Instead of implementing Cloneable, we created copy constructors because they were easier to understand, maintain, and extend.",
+            "deepDive": "clone() is a protected native method in Object. To use it, a class must implement Cloneable; otherwise CloneNotSupportedException is thrown. The default implementation performs a field-by-field memory copy, which becomes problematic when mutable nested objects exist because both objects share the same references.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Employee implements Cloneable {\n\n    @Override\n    protected Employee clone() throws CloneNotSupportedException {\n        return (Employee) super.clone();\n    }\n}"
+            },
+            "performance": "Shallow cloning is generally fast because it performs a memory-level copy. Deep cloning is significantly more expensive since every nested object must also be duplicated.",
+            "bestPractices": [
+              "Prefer copy constructors.",
+              "Use Builder Pattern for immutable objects.",
+              "Avoid Cloneable in new code.",
+              "Document whether copying is shallow or deep."
+            ],
+            "commonMistakes": [
+              "Expecting clone() to perform deep copying.",
+              "Sharing mutable objects after cloning.",
+              "Ignoring CloneNotSupportedException."
+            ],
+            "followUpQuestions": [
+              "Difference between shallow and deep copy?",
+              "Why is Cloneable considered broken?",
+              "How would you implement deep cloning?"
+            ],
+            "interviewerTips": [
+              "Senior interviewers usually expect you to recommend copy constructors instead of clone()."
+            ],
+            "keyTakeaway": "clone() exists for backward compatibility, but modern Java favors explicit copying mechanisms."
+          }
+        },
+        {
+          "question": "What does getClass() do? Where is it used in real applications?",
+          "answer": {
+            "interviewAnswer": "getClass() returns the runtime Class object representing the actual type of an object. It enables reflection, annotation processing, framework initialization, dependency injection, serialization, and runtime inspection.",
+            "scenario": "While debugging Spring AOP issues, we often called getClass() to determine whether a bean was the original implementation or a CGLIB/JDK proxy. This helped identify why certain methods were not being intercepted by aspects.",
+            "deepDive": "Every Java object carries metadata pointing to its Class object. getClass() is a final native method in Object, so subclasses cannot override it. Reflection APIs operate using the returned Class instance.",
+            "codeExample": {
+              "language": "java",
+              "code": "Employee emp = new Employee();\n\nSystem.out.println(emp.getClass().getName());\nSystem.out.println(emp.getClass().getSimpleName());"
+            },
+            "performance": "Calling getClass() is extremely fast because the JVM already stores a reference to the object's class metadata.",
+            "bestPractices": [
+              "Use getClass() for reflection and debugging.",
+              "Prefer instanceof when checking inheritance relationships.",
+              "Avoid excessive reflection in performance-critical paths."
+            ],
+            "commonMistakes": [
+              "Using reflection unnecessarily.",
+              "Confusing getClass() with instanceof.",
+              "Assuming proxy classes equal concrete implementation classes."
+            ],
+            "followUpQuestions": [
+              "Difference between getClass() and instanceof?",
+              "How does Spring use reflection?",
+              "Can getClass() return null?"
+            ],
+            "interviewerTips": [
+              "Mention Spring proxies or Hibernate proxies for senior interviews."
+            ],
+            "keyTakeaway": "getClass() provides runtime type information and forms the foundation of Java Reflection."
+          }
+        },
+        {
+          "question": "Why was finalize() deprecated? What should be used instead?",
+          "answer": {
+            "interviewAnswer": "finalize() was intended to allow cleanup before garbage collection, but it proved unreliable because the JVM never guaranteed when—or even if—it would execute. Due to unpredictable execution, poor performance, object resurrection risks, and security concerns, finalize() was deprecated and should no longer be used.",
+            "scenario": "Older legacy applications sometimes relied on finalize() to close file handles or database connections. Modern applications use try-with-resources and AutoCloseable to ensure deterministic cleanup immediately after resource usage.",
+            "deepDive": "Objects with finalize() require additional processing by the garbage collector. The object is first placed on a finalization queue before actual memory reclamation, increasing GC overhead. Worse, finalize() can resurrect objects by assigning 'this' to a static reference, delaying garbage collection even further.",
+            "codeExample": {
+              "language": "java",
+              "code": "try (BufferedReader reader = Files.newBufferedReader(path)) {\n    // Read file\n}\n// Resource automatically closed"
+            },
+            "performance": "Objects requiring finalization survive at least one additional GC cycle, increasing memory pressure and reducing GC efficiency.",
+            "bestPractices": [
+              "Use try-with-resources.",
+              "Implement AutoCloseable for custom resources.",
+              "Never rely on garbage collection for releasing resources."
+            ],
+            "commonMistakes": [
+              "Closing database connections in finalize().",
+              "Expecting finalize() to execute immediately.",
+              "Using finalize() for business logic."
+            ],
+            "followUpQuestions": [
+              "What replaced finalize()?",
+              "What is Cleaner API?",
+              "Can finalize() execute multiple times?"
+            ],
+            "interviewerTips": [
+              "Mention try-with-resources and AutoCloseable. These are the expected modern alternatives."
+            ],
+            "keyTakeaway": "Resource cleanup should be deterministic. finalize() is unpredictable and should be avoided."
+          }
+        },
+        {
+          "question": "What are wait(), notify(), and notifyAll()? Why are they part of Object instead of Thread?",
+          "answer": {
+            "interviewAnswer": "wait(), notify(), and notifyAll() are synchronization methods used for inter-thread communication. They belong to Object because synchronization in Java is based on an object's monitor (lock), not on the thread itself. A thread waits on an object's monitor and another thread notifies waiting threads using the same monitor.",
+            "scenario": "Before adopting BlockingQueue, one legacy module implemented a producer-consumer pattern using wait() and notifyAll(). Producers added tasks to a shared queue, and consumers waited until new tasks became available. Later, we replaced this with java.util.concurrent classes because they are safer and easier to maintain.",
+            "deepDive": "When a thread enters a synchronized block, it acquires the object's monitor. Calling wait() releases that monitor and suspends the thread. notify() wakes one waiting thread, while notifyAll() wakes all waiting threads. Because the monitor belongs to the object, these methods are defined in Object rather than Thread.",
+            "codeExample": {
+              "language": "java",
+              "code": "synchronized(queue) {\n    while(queue.isEmpty()) {\n        queue.wait();\n    }\n\n    Task task = queue.remove();\n}\n\nsynchronized(queue) {\n    queue.add(task);\n    queue.notifyAll();\n}"
+            },
+            "performance": "Low-level wait()/notify() requires careful synchronization and is error-prone. Modern concurrency utilities such as BlockingQueue, CountDownLatch, Semaphore, and CompletableFuture are usually preferred.",
+            "bestPractices": [
+              "Always call wait() inside a loop.",
+              "Own the object's monitor before calling wait() or notify().",
+              "Prefer java.util.concurrent abstractions.",
+              "Use notifyAll() unless a single waiting thread is guaranteed."
+            ],
+            "commonMistakes": [
+              "Calling wait() outside synchronized blocks.",
+              "Using if instead of while around wait().",
+              "Calling notify() on a different object."
+            ],
+            "followUpQuestions": [
+              "Why should wait() be inside a while loop?",
+              "Difference between sleep() and wait()?",
+              "Why does wait() release the lock but sleep() doesn't?"
+            ],
+            "interviewerTips": [
+              "Senior interviewers expect you to recommend higher-level concurrency utilities instead of manual wait()/notify()."
+            ],
+            "keyTakeaway": "wait(), notify(), and notifyAll() coordinate threads through an object's monitor, making them fundamental synchronization primitives in Java."
+          }
+        },
+        {
+          "question": "Explain Association, Aggregation, and Composition with real-world examples.",
+          "answer": {
+            "interviewAnswer": "Association, Aggregation, and Composition describe different types of relationships between objects. Association is a general relationship where two independent objects interact. Aggregation is a weak 'HAS-A' relationship where the child can exist independently of the parent. Composition is a strong 'HAS-A' relationship where the child cannot exist without the parent. Composition provides stronger ownership and is generally preferred when the lifecycle of dependent objects is tightly coupled.",
+            "scenario": "In our procurement platform, an Employee is associated with multiple Projects because both can exist independently. A Department aggregates Employees—employees can be transferred to another department without being deleted. However, an Order composes OrderItems. If an Order is deleted, all its OrderItems are also deleted because they have no meaning independently.",
+            "deepDive": "Association represents collaboration between objects. Aggregation represents ownership without lifecycle dependency. Composition represents ownership with lifecycle dependency. In JPA, Association is represented using relationships like @ManyToMany or @OneToMany, while Composition is often modeled using CascadeType.ALL and orphanRemoval=true to manage child entity lifecycles.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Association\nclass Employee {\n    Project project;\n}\n\n// Aggregation\nclass Department {\n    List<Employee> employees;\n}\n\n// Composition\nclass Order {\n    private List<OrderItem> items = new ArrayList<>();\n}"
+            },
+            "commonMistakes": [
+              "Treating Aggregation and Composition as the same concept.",
+              "Using inheritance instead of composition for object relationships.",
+              "Ignoring object lifecycle when choosing the relationship."
+            ],
+            "followUpQuestions": [
+              "How is Composition implemented in JPA?",
+              "Which relationship is preferred in object-oriented design?",
+              "Can Aggregation exist without Association?"
+            ],
+            "keyTakeaway": "Association models interaction, Aggregation models weak ownership, and Composition models strong ownership with dependent lifecycles."
+          }
+        },
+        {
+          "question": "What is the difference between IS-A and HAS-A relationship?",
+          "answer": {
+            "interviewAnswer": "IS-A represents inheritance where one class is a specialized version of another. HAS-A represents composition or aggregation where one object contains or uses another object. Modern object-oriented design prefers HAS-A over IS-A because it promotes loose coupling, flexibility, and better maintainability.",
+            "scenario": "In our notification module, EmailNotification IS-A Notification because it specializes notification behavior. However, NotificationService HAS-A NotificationProvider because it delegates sending messages to different provider implementations. When a new provider like Slack was introduced, only a new implementation was added without modifying the service.",
+            "deepDive": "IS-A establishes compile-time inheritance and allows method overriding through polymorphism. HAS-A builds systems by composing smaller reusable components. Composition reduces dependency between classes and makes it easier to replace implementations without affecting existing business logic.",
+            "codeExample": {
+              "language": "java",
+              "code": "// IS-A\nclass Animal {}\nclass Dog extends Animal {}\n\n// HAS-A\nclass Car {\n    private Engine engine;\n}"
+            },
+            "commonMistakes": [
+              "Using inheritance only for code reuse.",
+              "Creating deep inheritance hierarchies.",
+              "Ignoring composition as a simpler alternative."
+            ],
+            "followUpQuestions": [
+              "When should inheritance be used?",
+              "Why is composition preferred?",
+              "Give examples of HAS-A in Spring Boot."
+            ],
+            "keyTakeaway": "IS-A models specialization, while HAS-A models collaboration. Enterprise applications generally prefer HAS-A relationships."
+          }
+        },
+        {
+          "question": "Why is Composition preferred over Inheritance?",
+          "answer": {
+            "interviewAnswer": "Composition is preferred because it promotes loose coupling and greater flexibility. With composition, behavior can be changed by replacing collaborating objects instead of modifying class hierarchies. Inheritance tightly couples parent and child classes, making future changes more difficult.",
+            "scenario": "Our payment module initially used inheritance for different payment processors. As new business rules emerged, the hierarchy became difficult to maintain. We refactored it using the Strategy Pattern, where PaymentService composed a PaymentProcessor interface. Adding Razorpay, Stripe, or PayPal required only new implementations without changing the business layer.",
+            "deepDive": "Inheritance creates compile-time coupling. Changes in a parent class can unintentionally impact all subclasses. Composition delegates responsibilities to collaborating objects, enabling runtime flexibility and easier unit testing. Most GoF design patterns such as Strategy, Decorator, and Bridge are built around composition rather than inheritance.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface PaymentProcessor {\n    void pay();\n}\n\nclass PaymentService {\n    private final PaymentProcessor processor;\n\n    PaymentService(PaymentProcessor processor) {\n        this.processor = processor;\n    }\n\n    void process() {\n        processor.pay();\n    }\n}"
+            },
+            "commonMistakes": [
+              "Using inheritance simply to reuse code.",
+              "Creating rigid class hierarchies.",
+              "Violating the Liskov Substitution Principle."
+            ],
+            "followUpQuestions": [
+              "Which design patterns use composition?",
+              "Can inheritance ever be better?",
+              "How does Spring promote composition?"
+            ],
+            "keyTakeaway": "Composition provides flexibility, loose coupling, and easier maintenance, making it the preferred design approach in enterprise applications."
+          }
+        },
+        {
+          "question": "Explain Tight Coupling and Loose Coupling with a Spring Boot example.",
+          "answer": {
+            "interviewAnswer": "Tight coupling occurs when one class directly depends on another concrete implementation, making changes difficult. Loose coupling occurs when classes depend on abstractions such as interfaces, allowing implementations to change without affecting business logic. Spring Boot achieves loose coupling using Dependency Injection and the IoC container.",
+            "scenario": "Initially, our OrderService directly instantiated EmailNotificationService using the new keyword. When business requested SMS and Slack notifications, OrderService had to be modified repeatedly. We introduced a NotificationService interface and injected the required implementation using Spring. New notification channels could then be added without changing the business service.",
+            "deepDive": "Tightly coupled systems are difficult to test because dependencies cannot easily be mocked. Loose coupling enables dependency injection, unit testing, extensibility, and independent development of modules. Spring's IoC container resolves dependencies at runtime, making applications modular and maintainable.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Tight Coupling\nclass OrderService {\n    private EmailNotificationService service = new EmailNotificationService();\n}\n\n// Loose Coupling\ninterface NotificationService {\n    void send();\n}\n\n@Service\nclass EmailNotificationService implements NotificationService {}\n\n@Service\nclass OrderService {\n    private final NotificationService service;\n\n    OrderService(NotificationService service) {\n        this.service = service;\n    }\n}"
+            },
+            "commonMistakes": [
+              "Creating dependencies using the new keyword inside business classes.",
+              "Depending directly on concrete implementations.",
+              "Using field injection instead of constructor injection."
+            ],
+            "followUpQuestions": [
+              "How does Spring achieve loose coupling?",
+              "What role does IoC play?",
+              "How does loose coupling improve unit testing?"
+            ],
+            "keyTakeaway": "Loose coupling improves flexibility, testability, and maintainability by depending on abstractions instead of concrete implementations."
+          }
+        },
+        {
+          "question": "What is the difference between Dependency Injection (DI) and Dependency Inversion Principle (DIP)?",
+          "answer": {
+            "interviewAnswer": "Dependency Injection (DI) and Dependency Inversion Principle (DIP) are related but not the same. DIP is a design principle from SOLID that states high-level modules should depend on abstractions rather than concrete implementations. Dependency Injection is a design pattern used to implement DIP by providing dependencies from an external source instead of creating them inside the class. In Spring Boot, the IoC container performs Dependency Injection, helping applications follow the Dependency Inversion Principle.",
+            "scenario": "In our procurement platform, OrderService depended on the PaymentGateway interface instead of StripePaymentGateway directly. Spring injected the required implementation at runtime. When business introduced Razorpay, we simply added another implementation and updated the configuration without modifying OrderService.",
+            "deepDive": "Without DIP, business classes directly instantiate dependencies using the 'new' keyword, resulting in tight coupling. DI removes object creation responsibility from business classes, while DIP ensures those dependencies are abstractions. In simple terms, DIP answers 'what should we depend on?', while DI answers 'how do we provide those dependencies?'.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface PaymentGateway {\n    void pay();\n}\n\n@Service\nclass StripePaymentGateway implements PaymentGateway {\n    public void pay() {}\n}\n\n@Service\nclass OrderService {\n\n    private final PaymentGateway gateway;\n\n    public OrderService(PaymentGateway gateway) {\n        this.gateway = gateway;\n    }\n}"
+            },
+            "commonMistakes": [
+              "Assuming Dependency Injection and Dependency Inversion are the same.",
+              "Using concrete classes instead of interfaces.",
+              "Creating dependencies manually using the new keyword."
+            ],
+            "followUpQuestions": [
+              "How does Spring IoC implement Dependency Injection?",
+              "Which SOLID principle does Spring use most?",
+              "Why is constructor injection preferred?"
+            ],
+            "keyTakeaway": "Dependency Inversion is the design principle, while Dependency Injection is one way to implement that principle."
+          }
+        },
+        {
+          "question": "Explain Abstract Class vs Interface from a Java 8/17 perspective.",
+          "answer": {
+            "interviewAnswer": "An abstract class is used when multiple related classes share common state and behavior. An interface defines a contract that unrelated classes can implement. Since Java 8, interfaces can contain default and static methods, and since Java 9, they can also have private methods. However, abstract classes can still maintain instance variables, constructors, and partial implementations, making them suitable when shared state or common implementation is required.",
+            "scenario": "In our notification module, NotificationService was designed as an interface because Email, SMS, and Slack notifications only shared a common contract. On the other hand, a BaseAuditService abstract class contained common audit logging logic used by multiple audit implementations, reducing code duplication.",
+            "deepDive": "Interfaces support multiple inheritance of type, while abstract classes support single inheritance with shared implementation. Interfaces promote loose coupling and extensibility, whereas abstract classes provide a common foundation. Spring heavily encourages programming to interfaces because it enables dependency injection and proxy-based features.",
+            "codeExample": {
+              "language": "java",
+              "code": "public interface NotificationService {\n    void send();\n\n    default void log() {\n        System.out.println(\"Logging notification\");\n    }\n}\n\npublic abstract class BaseAuditService {\n\n    protected String applicationName = \"Procurement\";\n\n    public void saveAudit() {\n        System.out.println(\"Saving audit log\");\n    }\n\n    public abstract void publishAudit();\n}"
+            },
+            "commonMistakes": [
+              "Using abstract classes where only a contract is needed.",
+              "Using interfaces to share mutable state.",
+              "Thinking interfaces cannot contain methods with implementations."
+            ],
+            "followUpQuestions": [
+              "Can an interface have constructors?",
+              "Can an abstract class implement an interface?",
+              "When should you choose an abstract class over an interface?"
+            ],
+            "keyTakeaway": "Use interfaces for defining contracts and abstraction. Use abstract classes when multiple implementations share common state or reusable behavior."
+          }
+        },
+        {
+          "question": "Explain Method Overloading vs Method Overriding with JVM internals.",
+          "answer": {
+            "interviewAnswer": "Method Overloading and Method Overriding are both examples of polymorphism but differ fundamentally. Overloading is resolved at compile time based on the method signature, whereas overriding is resolved at runtime based on the actual object type. The JVM uses static binding for overloaded methods and dynamic dispatch for overridden methods.",
+            "scenario": "Our PaymentService exposed multiple overloaded processPayment() methods for different request types, allowing clients to choose the appropriate API. At the same time, different payment providers such as StripePaymentGateway and RazorpayPaymentGateway overrode the pay() method. During execution, the JVM selected the correct implementation based on the actual object injected by Spring.",
+            "deepDive": "For overloaded methods, the compiler determines the target method before execution. For overridden methods, the JVM performs dynamic method dispatch using the object's runtime type. This mechanism enables Spring to inject different implementations through interfaces while the business code remains unchanged.",
+            "codeExample": {
+              "language": "java",
+              "code": "// Overloading\nclass PaymentService {\n\n    void process(int amount) {}\n\n    void process(int amount, String currency) {}\n}\n\n// Overriding\ninterface PaymentGateway {\n    void pay();\n}\n\nclass StripeGateway implements PaymentGateway {\n    @Override\n    public void pay() {\n        System.out.println(\"Stripe Payment\");\n    }\n}"
+            },
+            "commonMistakes": [
+              "Confusing overloading with overriding.",
+              "Believing overloaded methods are selected at runtime.",
+              "Thinking static methods participate in runtime polymorphism."
+            ],
+            "followUpQuestions": [
+              "Why is overloading resolved at compile time?",
+              "How does dynamic dispatch work internally?",
+              "Can static methods be overridden?"
+            ],
+            "keyTakeaway": "Overloading provides compile-time flexibility, while overriding enables runtime polymorphism through dynamic method dispatch."
+          }
+        },
+        {
+          "question": "Explain Dynamic Binding vs Static Binding in Java.",
+          "answer": {
+            "interviewAnswer": "Binding refers to linking a method call with its implementation. Static Binding happens at compile time, while Dynamic Binding happens at runtime. Static Binding is used for static, private, final methods, method overloading, and variables. Dynamic Binding is used for overridden instance methods, where the JVM determines the actual implementation based on the object's runtime type.",
+            "scenario": "In our notification microservice, OrderService depended on the NotificationService interface. During runtime, Spring injected EmailNotificationService or SlackNotificationService based on configuration. Although OrderService only knew about the interface, the JVM dynamically invoked the correct implementation using runtime polymorphism.",
+            "deepDive": "During compilation, overloaded methods are resolved based on method signatures, resulting in static binding. For overridden methods, the compiler generates a virtual method call. At runtime, the JVM performs dynamic dispatch using the object's actual class (virtual method table/vtable) to invoke the correct implementation. This mechanism is the foundation of polymorphism and enables frameworks like Spring to swap implementations transparently.",
+            "codeExample": {
+              "language": "java",
+              "code": "interface NotificationService {\n    void send();\n}\n\nclass EmailNotificationService implements NotificationService {\n    public void send() {\n        System.out.println(\"Email\");\n    }\n}\n\nNotificationService service = new EmailNotificationService();\nservice.send(); // Dynamic Binding"
+            },
+            "commonMistakes": [
+              "Assuming overloaded methods use runtime polymorphism.",
+              "Thinking static methods participate in dynamic binding.",
+              "Confusing binding with inheritance."
+            ],
+            "followUpQuestions": [
+              "Why are static methods statically bound?",
+              "How does the JVM perform dynamic dispatch?",
+              "What is a virtual method table?"
+            ],
+            "keyTakeaway": "Static Binding is resolved during compilation, whereas Dynamic Binding is resolved by the JVM at runtime using the actual object's type."
+          }
+        },
+        {
+          "question": "What is Covariant Return Type?",
+          "answer": {
+            "interviewAnswer": "Covariant Return Type allows an overridden method to return a subtype of the original method's return type. Introduced in Java 5, it improves readability and eliminates unnecessary type casting while preserving polymorphism.",
+            "scenario": "In one of our document processing modules, the base factory returned a generic Document object, while specialized factories returned InvoiceDocument and PurchaseOrderDocument. Client code could work with the specific document type without explicit casting.",
+            "deepDive": "When overriding a method, Java allows the return type to be more specific than the parent method's return type, provided it is a subclass. This supports better API design while maintaining compatibility with polymorphism.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Animal {}\n\nclass Dog extends Animal {}\n\nclass AnimalFactory {\n    Animal create() {\n        return new Animal();\n    }\n}\n\nclass DogFactory extends AnimalFactory {\n    @Override\n    Dog create() {\n        return new Dog();\n    }\n}"
+            },
+            "commonMistakes": [
+              "Thinking parameter types can also be covariant.",
+              "Returning unrelated types.",
+              "Confusing covariant return type with method overloading."
+            ],
+            "followUpQuestions": [
+              "Can primitive return types be covariant?",
+              "Why was covariant return introduced?",
+              "Where is it commonly used?"
+            ],
+            "keyTakeaway": "An overridden method may return a more specific subtype than its parent method."
+          }
+        },
+        {
+          "question": "What are the rules for Method Overriding?",
+          "answer": {
+            "interviewAnswer": "Method overriding follows several rules enforced by the Java compiler. The method name and parameters must remain the same, the return type must be compatible (covariant allowed), visibility cannot be reduced, checked exceptions cannot be broadened, and static, private, and final methods cannot be overridden.",
+            "scenario": "During a code review, a developer attempted to override a service method while reducing its visibility from public to protected. The compiler rejected the change because overriding cannot weaken access privileges. This helped prevent accidental API restrictions.",
+            "deepDive": "The JVM relies on consistent method signatures for dynamic dispatch. Allowing incompatible parameter lists, broader checked exceptions, or reduced visibility would break polymorphism and violate the Liskov Substitution Principle.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Parent {\n    public Number getValue() throws IOException {\n        return 10;\n    }\n}\n\nclass Child extends Parent {\n    @Override\n    public Integer getValue() {\n        return 20;\n    }\n}"
+            },
+            "commonMistakes": [
+              "Reducing access modifiers.",
+              "Trying to override private methods.",
+              "Overriding static methods.",
+              "Throwing broader checked exceptions."
+            ],
+            "followUpQuestions": [
+              "Can we increase visibility while overriding?",
+              "Can we override final methods?",
+              "Can constructors be overridden?"
+            ],
+            "keyTakeaway": "Overriding preserves polymorphism by enforcing strict compatibility between parent and child methods."
+          }
+        },
+        {
+          "question": "What is a Marker Interface? Give real-world examples.",
+          "answer": {
+            "interviewAnswer": "A Marker Interface is an interface with no methods or constants. It simply marks a class with metadata so that the JVM or a framework can provide special behavior. Common examples include Serializable, Cloneable, and Remote.",
+            "scenario": "Our application cached objects in Redis by serializing them. Domain classes implemented Serializable so that Java's serialization mechanism could convert them into byte streams before storing them.",
+            "deepDive": "Marker interfaces rely on polymorphism and type checking. For example, ObjectOutputStream checks whether an object implements Serializable before serialization. If not, it throws NotSerializableException. Unlike annotations, marker interfaces become part of the type hierarchy and can be checked using instanceof.",
+            "codeExample": {
+              "language": "java",
+              "code": "class Employee implements Serializable {\n    private Long id;\n}"
+            },
+            "commonMistakes": [
+              "Assuming marker interfaces contain behavior.",
+              "Using Serializable without understanding serialization.",
+              "Confusing marker interfaces with annotations."
+            ],
+            "followUpQuestions": [
+              "Why is Cloneable a marker interface?",
+              "How is Serializable used internally?",
+              "What replaced marker interfaces in many cases?"
+            ],
+            "keyTakeaway": "Marker interfaces communicate metadata through the type system without defining methods."
+          }
+        },
+        {
+          "question": "Marker Interface vs Annotation",
+          "answer": {
+            "interviewAnswer": "Both Marker Interfaces and Marker Annotations provide metadata, but they serve different purposes. Marker Interfaces participate in the type system and support polymorphism, whereas Marker Annotations only provide metadata that can be inspected through reflection.",
+            "scenario": "Spring uses annotations like @Service, @Repository, and @Transactional because they carry metadata that the framework reads during startup. On the other hand, Java Serialization still relies on the Serializable marker interface because it needs type checking using instanceof.",
+            "deepDive": "Annotations are more flexible because they can contain attributes and are processed through reflection or annotation processors. Marker interfaces provide compile-time type safety but cannot hold configuration values.",
+            "codeExample": {
+              "language": "java",
+              "code": "@Service\nclass OrderService {}\n\nclass Employee implements Serializable {}"
+            },
+            "commonMistakes": [
+              "Using marker interfaces for configuration.",
+              "Thinking annotations support polymorphism.",
+              "Using annotations where type safety is required."
+            ],
+            "followUpQuestions": [
+              "Why did Java introduce annotations?",
+              "Can annotations replace Serializable?",
+              "When should marker interfaces still be used?"
+            ],
+            "keyTakeaway": "Use annotations for metadata and configuration; use marker interfaces when type information is required."
+          }
+        },
+        {
+          "question": "What are the different ways to create an object in Java?",
+          "answer": {
+            "interviewAnswer": "Java provides multiple ways to create objects: using the new keyword, reflection, clone(), deserialization, factory methods, and Unsafe (internal API). In enterprise applications, the new keyword and Dependency Injection are the most common approaches.",
+            "scenario": "In Spring Boot applications, we rarely create service objects using new. Instead, Spring creates and manages beans using reflection and dependency injection. This enables lifecycle management, AOP, transactions, and proxy creation.",
+            "deepDive": "Object creation isn't limited to constructors. Reflection uses Class.forName() or Constructor.newInstance(), deserialization recreates objects without invoking constructors, and clone() creates copies of existing objects. The JVM also provides low-level mechanisms such as Unsafe.allocateInstance(), although they're rarely used in business applications.",
+            "codeExample": {
+              "language": "java",
+              "code": "// 1. new\nEmployee e1 = new Employee();\n\n// 2. Reflection\nEmployee e2 = Employee.class.getDeclaredConstructor().newInstance();"
+            },
+            "commonMistakes": [
+              "Believing new is the only way to create objects.",
+              "Using reflection unnecessarily.",
+              "Ignoring Spring's bean lifecycle."
+            ],
+            "followUpQuestions": [
+              "How does Spring create beans?",
+              "Can deserialization bypass constructors?",
+              "How does reflection create objects?"
+            ],
+            "keyTakeaway": "Enterprise frameworks primarily create objects using reflection and dependency injection rather than direct instantiation."
+          }
+        },
+        {
+          "question": "Explain Shallow Copy vs Deep Copy with a production example.",
+          "answer": {
+            "interviewAnswer": "A shallow copy duplicates the top-level object but shares references to nested objects. A deep copy duplicates both the object and all nested objects, ensuring complete independence between the copies.",
+            "scenario": "Our order-processing service duplicated Order objects before applying business rules. Initially, we used shallow copying, causing changes to shared OrderItem objects to affect both orders. We later implemented deep copying to ensure modifications in one order did not impact the other.",
+            "deepDive": "Shallow copy is suitable when nested objects are immutable. Deep copy is necessary when nested mutable objects should remain independent. Copy constructors, builders, or serialization libraries are preferred over clone() for implementing deep copies.",
+            "codeExample": {
+              "language": "java",
+              "code": "Order copy = new Order(original);\n\n// Copy constructor creates new OrderItems\n// instead of sharing existing references."
+            },
+            "commonMistakes": [
+              "Assuming clone() performs deep copying.",
+              "Sharing mutable child objects unintentionally.",
+              "Ignoring nested collections during copying."
+            ],
+            "followUpQuestions": [
+              "How do copy constructors compare with clone()?",
+              "When is shallow copy sufficient?",
+              "How do immutable objects simplify copying?"
+            ],
+            "keyTakeaway": "Use shallow copy for immutable object graphs and deep copy when mutable nested objects must remain independent."
+          }
         }
       ]
     },
@@ -92,23 +1520,120 @@
       "items": [
         {
           "question": "Why is String immutable in Java? What issues would arise if it wasn’t?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "String is immutable because once an object is created, its value cannot be modified. This design enables String Constant Pool (SCP), thread safety, cached hashCode(), security, and JVM optimizations. Since Strings are widely shared across applications, immutability guarantees predictable behavior. If String were mutable, modifying one reference could unexpectedly affect other references pointing to the same object, breaking caching, authentication, collections, and concurrent applications.",
+            "scenario": "In our Spring Boot microservices, JWT tokens, OAuth client IDs, Kafka topic names, Redis cache keys, and application configuration are all stored as Strings. Because these values are immutable, multiple services and threads can safely share them without synchronization or the risk of accidental modification.",
+            "deepDive": "The JVM stores String literals in the String Constant Pool to reduce memory usage. This optimization is only possible because Strings are immutable. String also caches its hashCode after the first computation, making repeated HashMap lookups O(1). Security-sensitive APIs such as ClassLoader, JDBC, file paths, and network connections rely on immutable Strings to prevent attackers or application code from changing values after validation.",
+            "codeExample": {
+              "language": "java",
+              "code": "String s1 = \"Java\";\nString s2 = s1;\n\ns1 = s1.concat(\" 21\");\n\nSystem.out.println(s1); // Java 21\nSystem.out.println(s2); // Java"
+            },
+            "commonMistakes": [
+              "Thinking final is the reason String is immutable.",
+              "Assuming concat() modifies the existing object.",
+              "Ignoring the role of immutability in String Pool and hashCode caching."
+            ],
+            "followUpQuestions": [
+              "Why is String declared final?",
+              "Why is String used as a HashMap key?",
+              "How does String Constant Pool work?",
+              "How is hashCode cached?"
+            ],
+            "keyTakeaway": "String immutability enables memory optimization, thread safety, security, efficient hashing, and JVM-level optimizations."
+          }
         },
         {
           "question": "When would you choose StringBuilder vs StringBuffer in a real scenario?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Use StringBuilder when multiple string modifications happen within a single thread because it provides better performance by avoiding synchronization. Use StringBuffer only when the same mutable string object must be shared and modified safely across multiple threads. In modern Spring Boot applications, StringBuilder is almost always the preferred choice because objects are typically request-scoped and not shared.",
+            "scenario": "While generating a large CSV report containing thousands of records, we used StringBuilder to efficiently append data before streaming the response. Since each HTTP request was handled independently, there was no need for synchronization. Using StringBuffer would have introduced unnecessary locking overhead.",
+            "deepDive": "Both classes internally maintain a resizable character buffer and expose nearly identical APIs. The only significant difference is that StringBuffer synchronizes every mutating method, whereas StringBuilder does not. Because synchronization incurs locking overhead, StringBuilder generally performs better in single-threaded or thread-confined environments.",
+            "codeExample": {
+              "language": "java",
+              "code": "StringBuilder builder = new StringBuilder();\nfor (Order order : orders) {\n    builder.append(order.getId()).append(',');\n}\nreturn builder.toString();"
+            },
+            "commonMistakes": [
+              "Using StringBuffer by default without requiring thread safety.",
+              "Using '+' inside loops instead of StringBuilder.",
+              "Sharing StringBuilder between multiple threads."
+            ],
+            "followUpQuestions": [
+              "How does StringBuilder increase its capacity?",
+              "Why is '+' inefficient inside loops?",
+              "Does the compiler optimize string concatenation?"
+            ],
+            "keyTakeaway": "Prefer StringBuilder for almost all production code. Use StringBuffer only when multiple threads genuinely share the same mutable buffer."
+          }
         },
         {
           "question": "How do you compare two strings correctly, and what mistakes do developers make?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Use equals() to compare String content and == to compare object references. Since two different String objects can contain identical text, business logic should almost always use equals(). When null values are possible, compare using constant.equals(variable) or Objects.equals() to avoid NullPointerException.",
+            "scenario": "A user authorization module compared roles using == instead of equals(). It worked during testing because literals were interned in the String Pool but failed in production when values were retrieved from the database, causing valid users to lose access.",
+            "deepDive": "The == operator checks whether two references point to the same object. The equals() method compares the sequence of characters stored inside the String. String literals may reference the same pooled object, making == appear to work, but Strings created at runtime usually reside as separate objects in heap memory.",
+            "codeExample": {
+              "language": "java",
+              "code": "String role1 = \"ADMIN\";\nString role2 = new String(\"ADMIN\");\n\nSystem.out.println(role1 == role2);      // false\nSystem.out.println(role1.equals(role2)); // true"
+            },
+            "commonMistakes": [
+              "Using == for business logic.",
+              "Calling variable.equals(value) when the variable can be null.",
+              "Assuming String literals and runtime Strings behave the same."
+            ],
+            "followUpQuestions": [
+              "How does String Pool affect ==?",
+              "When should Objects.equals() be used?",
+              "How is equals() implemented internally?"
+            ],
+            "keyTakeaway": "Use equals() for content comparison and == only when checking object identity."
+          }
         },
         {
           "question": "How would you design a custom immutable class?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Make the class final so it cannot be subclassed, declare all fields private and final, initialize them through the constructor, avoid setters, and perform defensive copying for mutable fields. Getters should return immutable views or defensive copies to prevent external modification.",
+            "scenario": "We created an immutable Money value object shared across multiple microservices. Since the object represented financial data, immutability ensured calculations remained consistent and thread-safe while eliminating accidental modifications.",
+            "deepDive": "True immutability requires protecting the entire object graph, not just the top-level object. If mutable collections or Date objects are exposed directly, callers can still modify the object's state. Defensive copying using List.copyOf(), copy constructors, or immutable collections preserves immutability.",
+            "codeExample": {
+              "language": "java",
+              "code": "public final class Employee {\n    private final String name;\n    private final List<String> skills;\n\n    public Employee(String name, List<String> skills) {\n        this.name = name;\n        this.skills = List.copyOf(skills);\n    }\n\n    public String getName() { return name; }\n    public List<String> getSkills() { return skills; }\n}"
+            },
+            "commonMistakes": [
+              "Returning mutable collections directly.",
+              "Providing setter methods.",
+              "Not performing defensive copying.",
+              "Forgetting to make the class final."
+            ],
+            "followUpQuestions": [
+              "Can an immutable class contain mutable fields?",
+              "Why is List.copyOf() preferred?",
+              "Why are Records considered immutable?"
+            ],
+            "keyTakeaway": "An immutable class protects both its own state and every mutable object it references."
+          }
         },
         {
           "question": "Apart from String, what other immutable classes have you used and why?",
-          "answer": ""
+          "answer": {
+            "interviewAnswer": "Common immutable classes include Integer, Long, Boolean, BigDecimal, BigInteger, UUID, LocalDate, LocalDateTime, Instant, Optional, Path, and Java Records. They represent value objects that should remain consistent after creation, making them inherently thread-safe and safe to share across the application.",
+            "scenario": "Our payment service used BigDecimal for monetary calculations and LocalDateTime for transaction timestamps. Their immutability prevented accidental modifications and eliminated synchronization concerns when processing concurrent payment requests.",
+            "deepDive": "The Java Time API replaced the mutable Date and Calendar classes with immutable alternatives to simplify concurrent programming. BigDecimal is immutable to ensure arithmetic operations always produce new objects instead of modifying existing values, preventing subtle financial calculation bugs.",
+            "codeExample": {
+              "language": "java",
+              "code": "BigDecimal amount = new BigDecimal(\"100.00\");\nBigDecimal updated = amount.add(new BigDecimal(\"25.00\"));\n\nSystem.out.println(amount);  // 100.00\nSystem.out.println(updated); // 125.00"
+            },
+            "commonMistakes": [
+              "Assuming add() modifies BigDecimal.",
+              "Using mutable Date instead of LocalDate or Instant.",
+              "Thinking wrapper classes are mutable."
+            ],
+            "followUpQuestions": [
+              "Why is BigDecimal immutable?",
+              "Why did Java introduce the java.time API?",
+              "Are Java Records completely immutable?"
+            ],
+            "keyTakeaway": "Immutable value objects simplify concurrent programming, improve reliability, and prevent accidental state changes."
+          }
         }
       ]
     },
