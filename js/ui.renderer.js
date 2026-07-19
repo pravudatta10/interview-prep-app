@@ -357,6 +357,7 @@ const UIRenderer = (() => {
         const content = titleEl.nextElementSibling;
         if (!content) return;
         const isOpening = content.classList.contains("d-none");
+        const anchorBefore = titleEl.getBoundingClientRect().top;
 
         if (isOpening) {
             // Exclusive accordion: collapse every other open section first.
@@ -369,32 +370,17 @@ const UIRenderer = (() => {
 
         content.classList.toggle("d-none");
         titleEl.classList.toggle("is-open");
-    }
 
-    function closeAnswer(btn) {
-        const answer = btn.nextElementSibling;
-        const code = answer?.nextElementSibling;
-        answer?.classList.add("hidden");
-        if (code && code.classList?.contains("hidden") === false && code.tagName === "PRE") {
-            code.classList.add("hidden");
-        }
-        const label = btn.querySelector(".reveal-btn-text");
-        if (label) label.textContent = "Show Answer";
-        else btn.innerText = "Show Answer";
-        btn.classList.remove("is-open");
+        // Compensate scroll so collapsing siblings above doesn't shift this
+        // section out from under the user's tap/click.
+        const anchorAfter = titleEl.getBoundingClientRect().top;
+        const delta = anchorAfter - anchorBefore;
+        if (delta !== 0) window.scrollBy({ top: delta, left: 0, behavior: "instant" });
     }
 
     function toggleAnswer(btn) {
         const answer = btn.nextElementSibling;
         const code = answer.nextElementSibling;
-        const isOpening = answer.classList.contains("hidden");
-
-        if (isOpening) {
-            // Exclusive accordion: collapse every other open answer first.
-            document.querySelectorAll(".reveal-btn.is-open").forEach((other) => {
-                if (other !== btn) closeAnswer(other);
-            });
-        }
 
         answer.classList.toggle("hidden");
         if (code) code.classList.toggle("hidden");
@@ -409,12 +395,17 @@ const UIRenderer = (() => {
         btn.classList.toggle("is-open", !isHidden);
     }
 
+    function collapseAllAnswers() {
+        document.querySelectorAll(".reveal-btn.is-open").forEach((btn) => btn.click());
+    }
+
     return {
         renderSidebar,
         renderSections,
         setActiveConcept,
         toggleSection,
-        toggleAnswer
+        toggleAnswer,
+        collapseAllAnswers
     };
 
 })();

@@ -195,6 +195,11 @@
         }).observe(contentContainer, { childList: true });
     }
 
+    /* ---------------- Collapse all answers ---------------- */
+    $("#collapseAllBtn")?.addEventListener("click", () => {
+        window.UIRenderer?.collapseAllAnswers();
+    });
+
     /* ---------------- Sync category label once data has loaded ---------------- */
     window.addEventListener("load", () => {
         setTimeout(syncCategoryLabel, 300);
@@ -219,6 +224,7 @@
     }
 
     let bookmarksViewActive = false;
+    let lastMeaningfulNav = navHome;
 
     function exitBookmarksView() {
         bookmarksViewActive = false;
@@ -226,16 +232,35 @@
         if (input) { input.value = ""; input.dispatchEvent(new Event("input")); }
     }
 
+    function hideBuiltInEmptyState() {
+        $("#emptyState")?.classList.add("hidden");
+    }
+
+    function showNoBookmarksMessage() {
+        const container = $("#contentContainer");
+        if (!container) return;
+        container.insertAdjacentHTML("beforeend", `
+            <div class="coming-soon-panel" id="noBookmarksPanel">
+                <div class="coming-soon-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                </div>
+                <h3>No bookmarks here yet</h3>
+                <p>Tap the bookmark icon on any question in this topic to save it. (Bookmarks are shown per topic, not across all topics yet.)</p>
+            </div>`);
+    }
+
     navHome?.addEventListener("click", () => {
         setActiveNav(navHome);
+        lastMeaningfulNav = navHome;
         exitBookmarksView();
-        $("#contentContainer")?.classList.remove("hidden");
+        hideBuiltInEmptyState();
         renderComingSoon(false);
         window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
     navLearn?.addEventListener("click", () => {
         setActiveNav(navLearn);
+        lastMeaningfulNav = navLearn;
         openMobileSidebar();
     });
 
@@ -243,7 +268,7 @@
         const container = $("#contentContainer");
         if (!container) return;
         if (show) {
-            container.dataset.prevHtml = container.dataset.prevHtml || "";
+            hideBuiltInEmptyState();
             container.innerHTML = `
                 <div class="coming-soon-panel">
                     <div class="coming-soon-icon">
@@ -257,18 +282,25 @@
 
     navCoding?.addEventListener("click", () => {
         setActiveNav(navCoding);
+        lastMeaningfulNav = navCoding;
+        bookmarksViewActive = false;
         renderComingSoon(true);
     });
 
     navBookmarks?.addEventListener("click", () => {
         setActiveNav(navBookmarks);
+        lastMeaningfulNav = navBookmarks;
         renderComingSoon(false);
+        hideBuiltInEmptyState();
         bookmarksViewActive = true;
 
         const bookmarks = getBookmarks();
+        let anyVisible = false;
         document.querySelectorAll(".question-item[data-q-key]").forEach((card) => {
             const key = card.getAttribute("data-q-key");
-            card.style.display = bookmarks.has(key) ? "" : "none";
+            const match = bookmarks.has(key);
+            card.style.display = match ? "" : "none";
+            if (match) anyVisible = true;
         });
         document.querySelectorAll(".question-section").forEach((section) => {
             const visibleCards = section.querySelectorAll('.question-item[data-q-key]:not([style*="display: none"])');
@@ -280,9 +312,13 @@
                 title?.classList.add("is-open");
             }
         });
+
+        $("#noBookmarksPanel")?.remove();
+        if (!anyVisible) showNoBookmarksMessage();
     });
 
     navSettings?.addEventListener("click", () => {
+        lastMeaningfulNav = navButtons.find((b) => b.classList.contains("is-active")) || navHome;
         openSettingsSheet();
     });
 
@@ -307,11 +343,19 @@
     }
     function closeSettingsSheet() {
         settingsBackdrop?.classList.remove("is-open");
-        setActiveNav(navHome);
+        setActiveNav(lastMeaningfulNav);
     }
 
     settingsBackdrop?.addEventListener("click", (e) => {
         if (e.target === settingsBackdrop) closeSettingsSheet();
+    });
+
+    $("#sheetCloseBtn")?.addEventListener("click", closeSettingsSheet);
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && settingsBackdrop?.classList.contains("is-open")) {
+            closeSettingsSheet();
+        }
     });
 
     sheetDarkToggle?.addEventListener("click", () => {
