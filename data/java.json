@@ -1634,6 +1634,31 @@
             ],
             "keyTakeaway": "Immutable value objects simplify concurrent programming, improve reliability, and prevent accidental state changes."
           }
+        },
+        {
+          "question": "Explain the String Constant Pool (SCP). How does it improve memory and performance?",
+          "answer": {
+            "interviewAnswer": "The String Constant Pool (SCP) is a special memory area inside the Heap where the JVM stores unique String literals. When a String literal is created, the JVM first checks whether the same value already exists in the pool. If it does, the existing reference is reused instead of creating a new object. This reduces memory consumption, minimizes object creation, lowers GC pressure, and improves application performance. The SCP works because String is immutable; otherwise, modifying one shared String would affect every reference pointing to it.",
+            "scenario": "In our Spring Boot microservices, constants such as API endpoints, Kafka topic names, Redis keys, error messages, and configuration values are reused thousands of times across requests. Because these Strings reside in the String Constant Pool, the JVM creates only one instance, reducing memory usage and improving startup and runtime performance.",
+            "deepDive": "The String Constant Pool is maintained by the JVM and resides in the Heap (since Java 7). Every String literal is automatically interned. If multiple classes reference the same literal, they all point to the same pooled object. However, Strings created using the new keyword are allocated in the Heap regardless of whether an identical literal exists in the pool. They can be explicitly added to the pool using intern(). The effectiveness of the pool depends entirely on String immutability because shared objects must never change.",
+            "codeExample": {
+              "language": "java",
+              "code": "String s1 = \"Java\";\nString s2 = \"Java\";\nString s3 = new String(\"Java\");\n\nSystem.out.println(s1 == s2); // true (same pooled object)\nSystem.out.println(s1 == s3); // false (different Heap object)\nSystem.out.println(s1.equals(s3)); // true"
+            },
+            "commonMistakes": [
+              "Assuming every String object is stored in the String Constant Pool.",
+              "Believing new String() reuses the pooled object.",
+              "Confusing the Heap with the String Constant Pool.",
+              "Thinking the String Constant Pool exists outside the Heap in modern Java."
+            ],
+            "followUpQuestions": [
+              "Where is the String Constant Pool located in Java 17?",
+              "How does intern() interact with the String Constant Pool?",
+              "Why does the String Constant Pool require immutable Strings?",
+              "How many objects are created by new String(\"Java\")?"
+            ],
+            "keyTakeaway": "The String Constant Pool improves memory efficiency and performance by storing only one copy of each String literal. This optimization is possible because String objects are immutable."
+          }
         }
       ]
     },

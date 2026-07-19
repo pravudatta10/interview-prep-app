@@ -298,7 +298,7 @@ const UIRenderer = (() => {
             <div class="mb-3 question-section" style="--section-delay:${sIdx * 40}ms">
 
                 <div class="section-title"
-                     onclick="this.nextElementSibling.classList.toggle('d-none'); this.classList.toggle('is-open')"
+                     onclick="UIRenderer.toggleSection(this)"
                      role="button" tabindex="0"
                      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
                     <span class="section-title-text">${section.title}</span>
@@ -353,9 +353,48 @@ const UIRenderer = (() => {
         }
     }
 
+    function toggleSection(titleEl) {
+        const content = titleEl.nextElementSibling;
+        if (!content) return;
+        const isOpening = content.classList.contains("d-none");
+
+        if (isOpening) {
+            // Exclusive accordion: collapse every other open section first.
+            document.querySelectorAll(".section-title.is-open").forEach((other) => {
+                if (other === titleEl) return;
+                other.classList.remove("is-open");
+                other.nextElementSibling?.classList.add("d-none");
+            });
+        }
+
+        content.classList.toggle("d-none");
+        titleEl.classList.toggle("is-open");
+    }
+
+    function closeAnswer(btn) {
+        const answer = btn.nextElementSibling;
+        const code = answer?.nextElementSibling;
+        answer?.classList.add("hidden");
+        if (code && code.classList?.contains("hidden") === false && code.tagName === "PRE") {
+            code.classList.add("hidden");
+        }
+        const label = btn.querySelector(".reveal-btn-text");
+        if (label) label.textContent = "Show Answer";
+        else btn.innerText = "Show Answer";
+        btn.classList.remove("is-open");
+    }
+
     function toggleAnswer(btn) {
         const answer = btn.nextElementSibling;
         const code = answer.nextElementSibling;
+        const isOpening = answer.classList.contains("hidden");
+
+        if (isOpening) {
+            // Exclusive accordion: collapse every other open answer first.
+            document.querySelectorAll(".reveal-btn.is-open").forEach((other) => {
+                if (other !== btn) closeAnswer(other);
+            });
+        }
 
         answer.classList.toggle("hidden");
         if (code) code.classList.toggle("hidden");
@@ -374,6 +413,7 @@ const UIRenderer = (() => {
         renderSidebar,
         renderSections,
         setActiveConcept,
+        toggleSection,
         toggleAnswer
     };
 

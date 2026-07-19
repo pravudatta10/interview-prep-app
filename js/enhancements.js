@@ -199,4 +199,159 @@
     window.addEventListener("load", () => {
         setTimeout(syncCategoryLabel, 300);
     });
+
+    /* ---------------- Bottom navigation (mobile) ---------------- */
+    const navHome = $("#navHome");
+    const navLearn = $("#navLearn");
+    const navCoding = $("#navCoding");
+    const navBookmarks = $("#navBookmarks");
+    const navSettings = $("#navSettings");
+    const navButtons = [navHome, navLearn, navCoding, navBookmarks, navSettings].filter(Boolean);
+
+    function setActiveNav(btn) {
+        navButtons.forEach((b) => b.classList.toggle("is-active", b === btn));
+    }
+
+    function openMobileSidebar() {
+        const el = document.getElementById("mobileSidebar");
+        if (!el || !window.bootstrap) return;
+        (bootstrap.Offcanvas.getOrCreateInstance(el)).show();
+    }
+
+    let bookmarksViewActive = false;
+
+    function exitBookmarksView() {
+        bookmarksViewActive = false;
+        const input = $("#searchInput");
+        if (input) { input.value = ""; input.dispatchEvent(new Event("input")); }
+    }
+
+    navHome?.addEventListener("click", () => {
+        setActiveNav(navHome);
+        exitBookmarksView();
+        $("#contentContainer")?.classList.remove("hidden");
+        renderComingSoon(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    navLearn?.addEventListener("click", () => {
+        setActiveNav(navLearn);
+        openMobileSidebar();
+    });
+
+    function renderComingSoon(show) {
+        const container = $("#contentContainer");
+        if (!container) return;
+        if (show) {
+            container.dataset.prevHtml = container.dataset.prevHtml || "";
+            container.innerHTML = `
+                <div class="coming-soon-panel">
+                    <div class="coming-soon-icon">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M13 6l-2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h3>Coding section is on its way</h3>
+                    <p>DSA problems with brute-force to optimal walkthroughs are coming soon. Tap Home to get back to your concepts.</p>
+                </div>`;
+        }
+    }
+
+    navCoding?.addEventListener("click", () => {
+        setActiveNav(navCoding);
+        renderComingSoon(true);
+    });
+
+    navBookmarks?.addEventListener("click", () => {
+        setActiveNav(navBookmarks);
+        renderComingSoon(false);
+        bookmarksViewActive = true;
+
+        const bookmarks = getBookmarks();
+        document.querySelectorAll(".question-item[data-q-key]").forEach((card) => {
+            const key = card.getAttribute("data-q-key");
+            card.style.display = bookmarks.has(key) ? "" : "none";
+        });
+        document.querySelectorAll(".question-section").forEach((section) => {
+            const visibleCards = section.querySelectorAll('.question-item[data-q-key]:not([style*="display: none"])');
+            section.style.display = visibleCards.length ? "" : "none";
+            const content = section.querySelector(".section-content");
+            const title = section.querySelector(".section-title");
+            if (visibleCards.length && content?.classList.contains("d-none")) {
+                content.classList.remove("d-none");
+                title?.classList.add("is-open");
+            }
+        });
+    });
+
+    navSettings?.addEventListener("click", () => {
+        openSettingsSheet();
+    });
+
+    // Re-apply bookmarks filter after a fresh render if the view is active
+    if (contentContainer) {
+        new MutationObserver(() => {
+            if (bookmarksViewActive) navBookmarks?.click();
+        }).observe(contentContainer, { childList: true });
+    }
+
+    /* ---------------- Settings sheet ---------------- */
+    const settingsBackdrop = $("#settingsSheetBackdrop");
+    const sheetDarkToggle = $("#sheetDarkToggle");
+
+    function syncSheetDarkToggle() {
+        sheetDarkToggle?.classList.toggle("is-on", document.body.classList.contains("dark-mode"));
+    }
+
+    function openSettingsSheet() {
+        syncSheetDarkToggle();
+        settingsBackdrop?.classList.add("is-open");
+    }
+    function closeSettingsSheet() {
+        settingsBackdrop?.classList.remove("is-open");
+        setActiveNav(navHome);
+    }
+
+    settingsBackdrop?.addEventListener("click", (e) => {
+        if (e.target === settingsBackdrop) closeSettingsSheet();
+    });
+
+    sheetDarkToggle?.addEventListener("click", () => {
+        applyDarkMode(!document.body.classList.contains("dark-mode"));
+        syncSheetDarkToggle();
+    });
+
+    $("#sheetRecentBtn")?.addEventListener("click", () => {
+        $("#recentlyViewedBtn")?.click();
+    });
+
+    /* ---------------- Sticky current-section header (mobile) ---------------- */
+    const stickyHeader = $("#stickySectionHeader");
+    if (stickyHeader && "IntersectionObserver" in window) {
+        let currentTitle = "";
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const title = entry.target.querySelector(".section-title-text")?.textContent;
+                    if (title) currentTitle = title;
+                }
+            });
+            if (currentTitle) {
+                stickyHeader.textContent = currentTitle;
+                stickyHeader.classList.add("is-visible");
+            } else {
+                stickyHeader.classList.remove("is-visible");
+            }
+        }, { rootMargin: `-${120}px 0px -70% 0px`, threshold: 0 });
+
+        function observeSections() {
+            document.querySelectorAll(".question-section").forEach((s) => observer.observe(s));
+        }
+
+        if (contentContainer) {
+            new MutationObserver(() => {
+                stickyHeader.classList.remove("is-visible");
+                observeSections();
+            }).observe(contentContainer, { childList: true });
+        }
+        observeSections();
+    }
 })();
